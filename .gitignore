@@ -9,6 +9,8 @@ dist/
 .DS_Store
 artifacts/
 
-# Local-only: agent instructions and planning docs
+# Local-only: agent instructions and planning docs.
+# docs/ is ignored except the shared implementation plan.
 CLAUDE.md
-docs/
+docs/*
+!docs/IMPLEMENTATION-PLAN.md
