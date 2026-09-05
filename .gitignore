@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+.DS_Store
+artifacts/
+
+# Local-only: agent instructions and planning docs
+CLAUDE.md
+docs/
