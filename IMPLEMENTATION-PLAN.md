@@ -3,7 +3,7 @@
 Block Settlement Protocol v0.1 · block-metered compute on Hedera x402
 Target: ETHOnline 2026, Hedera AI & Agentic Payments track
 
-Canonical protocol: [`SPEC.md`](../SPEC.md).
+Canonical protocol: [`SPEC.md`](./SPEC.md).
 This document is the execution plan: what gets built, in what order, and what must be true before the next phase starts.
 
 ---

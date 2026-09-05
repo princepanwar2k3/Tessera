@@ -6,7 +6,7 @@ on Hedera x402.
 **Status: pre-implementation.** The protocol is drafted; no code is written yet.
 
 - Protocol: [`SPEC.md`](./SPEC.md)
-- Implementation plan: [`docs/IMPLEMENTATION-PLAN.md`](./docs/IMPLEMENTATION-PLAN.md)
+- Implementation plan: [`IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md)
 
 ## The invariants
 
