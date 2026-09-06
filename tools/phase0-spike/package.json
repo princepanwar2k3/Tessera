@@ -1,0 +1,21 @@
+{
+  "name": "@bsp/phase0-spike",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "THROWAWAY Phase 0 spike: one real x402 payment on Hedera testnet via Blocky402. Not part of the protocol implementation.",
+  "scripts": {
+    "server": "node --env-file=../../.env server.mjs",
+    "pay": "node --env-file=../../.env pay.mjs",
+    "build": "echo 'phase0-spike: nothing to build (throwaway)'",
+    "test": "node --check server.mjs && node --check pay.mjs && echo 'phase0-spike: syntax OK'",
+    "typecheck": "echo 'phase0-spike: plain JS, nothing to typecheck'"
+  },
+  "dependencies": {
+    "@x402/core": "^2.25.0",
+    "@x402/express": "^2.25.0",
+    "@x402/fetch": "^2.25.0",
+    "@x402/hedera": "^2.25.0",
+    "express": "^4.21.2"
+  }
+}
