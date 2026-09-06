@@ -1,14 +1,14 @@
-import pino from "pino";
+import pino, { type LoggerOptions } from "pino";
 
 export function createLogger(name = "daemon") {
-  return pino({
+  const options: LoggerOptions = {
     name,
     level: process.env.LOG_LEVEL ?? "info",
-    transport:
-      process.env.NODE_ENV === "production"
-        ? undefined
-        : { target: "pino-pretty", options: { colorize: true } },
-  });
+  };
+  if (process.env.NODE_ENV !== "production") {
+    options.transport = { target: "pino-pretty", options: { colorize: true } };
+  }
+  return pino(options);
 }
 
 export type Logger = ReturnType<typeof createLogger>;

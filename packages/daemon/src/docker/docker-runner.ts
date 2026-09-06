@@ -3,8 +3,8 @@ import type { JobArtifacts, ResourceCaps } from "../spec/index.js";
 export interface ContainerSpec {
   jobId: string;
   image: string;
-  cmd?: string[];
-  env?: Record<string, string>;
+  cmd?: string[] | undefined;
+  env?: Record<string, string> | undefined;
   caps: ResourceCaps;
   artifactHostDir: string;
 }

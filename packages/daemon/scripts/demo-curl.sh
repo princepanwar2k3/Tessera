@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full HTTP lifecycle demo against a running daemon (pnpm --filter @tessera/daemon dev).
+# Full HTTP lifecycle demo against a running daemon (pnpm --filter @bsp/daemon dev).
 # Requires: curl, jq, docker (the daemon needs a real Docker to start busybox).
 set -euo pipefail
 

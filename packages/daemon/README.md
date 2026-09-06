@@ -1,17 +1,17 @@
-# @tessera/daemon — provider node
+# @bsp/daemon — provider node
 
 Implements the provider side of BSP v0.1 (see repo root `SPEC.md`): gates a job behind an x402 402, owns the block clock, and runs the watchdog that kills a container the instant its block boundary passes unpaid.
 
-Built standalone — no dependency on `packages/protocol` / `packages/core` (they don't exist yet). See `../../CLAUDE.md` for the team split and the swap-later design of `src/spec/`.
+Built standalone — no dependency on `packages/protocol` / `packages/core` yet (they've since been merged in; wiring this package to them is open, see `../../claude.md`'s "Status" section). See `../../claude.md` for the team split and the swap-later design of `src/spec/`.
 
 ## Quickstart
 
 ```bash
-pnpm install                              # from repo root
-pnpm --filter @tessera/daemon test        # fast tests, no Docker needed
-pnpm --filter @tessera/daemon demo:kill   # real container, watchdog kills it at an unpaid boundary
-pnpm --filter @tessera/daemon dev         # start the HTTP daemon (needs Docker running)
-./scripts/demo-curl.sh                    # full HTTP lifecycle demo, in another terminal
+pnpm install                            # from repo root
+pnpm --filter @bsp/daemon test          # fast tests, no Docker needed
+pnpm --filter @bsp/daemon demo:kill     # real container, watchdog kills it at an unpaid boundary
+pnpm --filter @bsp/daemon dev           # start the HTTP daemon (needs Docker running)
+./scripts/demo-curl.sh                  # full HTTP lifecycle demo, in another terminal
 ```
 
 ## What's real vs. mocked today

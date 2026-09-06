@@ -13,7 +13,7 @@ Recommended path: run the daemon directly on the VPS host (Node 20 + systemd), t
    ```bash
    git clone <repo-url> && cd eth_global
    pnpm install
-   pnpm --filter @tessera/daemon build
+   pnpm --filter @bsp/daemon build
    ```
 3. Configure:
    ```bash

@@ -8,7 +8,7 @@ COPY packages/daemon/package.json packages/daemon/package.json
 RUN corepack enable && pnpm install --frozen-lockfile
 COPY tsconfig.base.json ./
 COPY packages/daemon packages/daemon
-RUN pnpm --filter @tessera/daemon build
+RUN pnpm --filter @bsp/daemon build
 
 FROM node:20-alpine
 WORKDIR /app

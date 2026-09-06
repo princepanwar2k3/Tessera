@@ -24,8 +24,8 @@ import type { Logger } from "../logging.js";
 export interface CreateJobInput {
   renterUaid: string;
   image: string;
-  cmd?: string[];
-  env?: Record<string, string>;
+  cmd?: string[] | undefined;
+  env?: Record<string, string> | undefined;
   blockSeconds: number;
   leadSeconds: number;
   pricePerBlock: string;

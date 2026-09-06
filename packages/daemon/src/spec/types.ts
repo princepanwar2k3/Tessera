@@ -18,26 +18,26 @@ export interface Job {
   id: string;
   renterUaid: string;
   image: string;
-  cmd?: string[];
-  env?: Record<string, string>;
+  cmd?: string[] | undefined;
+  env?: Record<string, string> | undefined;
   blockSeconds: number;
   leadSeconds: number;
   pricePerBlock: string; // smallest unit, decimal string to avoid float/bigint JSON issues
   asset: string;
   blockIndex: number; // block currently running (0 before block 1 starts)
   paidThrough: number; // highest settled block index
-  containerId?: string;
-  startedAt?: number; // ms epoch; clock starts here (container ready), not at payment
-  boundaryAt?: number; // ms epoch of the current block's end
+  containerId?: string | undefined;
+  startedAt?: number | undefined; // ms epoch; clock starts here (container ready), not at payment
+  boundaryAt?: number | undefined; // ms epoch of the current block's end
   status: JobStatus;
-  artifacts?: JobArtifacts;
+  artifacts?: JobArtifacts | undefined;
   createdAt: number;
 }
 
 export interface JobArtifacts {
   stdout: string;
   stderr: string;
-  artifactDir?: string;
+  artifactDir?: string | undefined;
 }
 
 export interface BlockMeta {
@@ -46,7 +46,7 @@ export interface BlockMeta {
   blockIndex: number;
   blockSeconds: number;
   leadSeconds: number;
-  clockStartedAt?: string; // RFC3339, present once block 1 has started
+  clockStartedAt?: string | undefined; // RFC3339, present once block 1 has started
   windowOpensAt: string; // RFC3339
   boundaryAt: string; // RFC3339
 }

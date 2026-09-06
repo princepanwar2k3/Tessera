@@ -5,7 +5,7 @@
  * emits a terminal receipt.
  *
  * Requires Docker to be running locally.
- * Run with: pnpm --filter @tessera/daemon demo:kill
+ * Run with: pnpm --filter @bsp/daemon demo:kill
  */
 import { randomUUID } from "node:crypto";
 import { mkdtemp } from "node:fs/promises";

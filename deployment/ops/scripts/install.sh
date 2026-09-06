@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs and enables the Tessera provider daemon as a systemd service on
-# a fresh Ubuntu VPS. Run from the repo root after `pnpm --filter @tessera/daemon build`.
+# a fresh Ubuntu VPS. Run from the repo root after `pnpm --filter @bsp/daemon build`.
 set -euo pipefail
 
 INSTALL_DIR="/opt/tessera"
