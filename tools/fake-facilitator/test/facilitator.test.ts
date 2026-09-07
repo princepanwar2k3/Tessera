@@ -38,3 +38,63 @@ describe('fake-facilitator', () => {
     expect(r.valid).toBe(false);
   });
 });
+
+describe('fake-facilitator: slow', () => {
+  it('delays settle by latencyMs, so window-expiry handling gets exercised', async () => {
+    const f = new FakeFacilitator({ behaviour: 'slow', latencyMs: 60 });
+    const started = Date.now();
+    const r = await f.settle(KEY);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(55);
+    expect(r.latencyMs).toBe(60);
+    expect(r.duplicate).toBe(false);
+  });
+
+  it('delays verify too — a slow verify still burns the renewal window', async () => {
+    const f = new FakeFacilitator({ behaviour: 'slow', latencyMs: 60 });
+    const started = Date.now();
+    const r = await f.verify(KEY);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(55);
+    expect(r.valid).toBe(true);
+  });
+});
+
+describe('fake-facilitator: over HTTP (how the daemon actually talks to it)', () => {
+  it('settles once and returns the same txId on a replay', async () => {
+    const f = new FakeFacilitator({ behaviour: 'success' });
+    const { server, url } = await f.listen(0);
+    try {
+      const post = async (path: string) => {
+        const res = await fetch(`${url}${path}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(KEY),
+        });
+        return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+      };
+      const first = await post('/settle');
+      const replay = await post('/settle');
+      expect(first.status).toBe(200);
+      expect(replay.body['txId']).toBe(first.body['txId']);
+      expect(replay.body['duplicate']).toBe(true);
+      expect(f.settledCount()).toBe(1);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('answers a rejected verify with 402, the code the daemon relays', async () => {
+    const f = new FakeFacilitator({ behaviour: 'verifyReject' });
+    const { server, url } = await f.listen(0);
+    try {
+      const res = await fetch(`${url}/verify`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(KEY),
+      });
+      expect(res.status).toBe(402);
+      expect(((await res.json()) as Record<string, unknown>)['reason']).toBe('insufficient_funds');
+    } finally {
+      server.close();
+    }
+  });
+});
