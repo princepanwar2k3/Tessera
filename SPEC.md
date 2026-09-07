@@ -195,13 +195,15 @@ Published to the job's HCS topic on every settled block and on termination.
   "amount": "1500",
   "txId": "0.0.1234@1757844000.123456789",
   "clockStartedAt": "2026-09-14T10:00:00.000Z",
-  "boundaryAt": "2026-09-14T10:00:30.000Z",
+  "boundaryAt": "2026-09-14T10:01:00.000Z",
   "providerSig": "...",
   "renterSig": "..."
 }
 ```
 
 `type` is one of `block_receipt`, `terminated`, `aborted`. Terminal messages carry `reason` and `finalBlockIndex` and omit payment fields.
+
+`boundaryAt` on a receipt is the boundary at which **the block this receipt is for** ends, per §5.4's `boundary_at` — so for block `n` it is `clockStartedAt + n * block_seconds`. Note this is not the same instant as the `boundaryAt` in the `blockMeta` of §6.1 that the payment satisfied: that one is the payment's deadline, which is the *previous* block's boundary. Every block therefore has exactly one receipt boundary, and consecutive receipts sit exactly `block_seconds` apart — which is what makes systematic shortening detectable under §8.
 
 Receipts SHOULD carry both signatures. A receipt with only the provider's signature is still valid evidence of a claim, but not of agreement.
 

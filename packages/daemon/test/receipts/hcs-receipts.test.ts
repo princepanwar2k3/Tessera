@@ -139,26 +139,18 @@ describe("Gate 3: a six-block job's receipts on the shared topic", () => {
     );
   });
 
-  it("lands every boundary on the job's own block grid, so durations are auditable (SPEC §8)", async () => {
+  it("gives every block a distinct boundary on the job's clock grid (SPEC §8)", async () => {
     await runSixBlocks();
     const receipts = hcs.messages.map((m) => JSON.parse(m.contents) as BlockReceipt);
     const startedAt = Date.parse(receipts[0]!.clockStartedAt);
+    const boundaries = receipts.map((r) => Date.parse(r.boundaryAt));
 
-    // What an auditor needs: every boundary is a whole number of blocks after
-    // the clock started. Systematic shortening shows up as a violation here.
-    for (const r of receipts) {
-      const elapsed = Date.parse(r.boundaryAt) - startedAt;
-      expect(elapsed % (BLOCK_SECONDS * 1000)).toBe(0);
-      expect(elapsed).toBeGreaterThan(0);
-    }
-
-    // From block 2 on, each receipt's boundary is exactly one block after the
-    // previous one. NOTE: blocks 1 and 2 share a boundary, because the daemon
-    // stamps the boundary being crossed rather than the end of the block paid
-    // for. Flagged for the team rather than asserted as correct here.
-    const later = receipts.slice(1).map((r) => Date.parse(r.boundaryAt));
-    for (let i = 1; i < later.length; i++) {
-      expect(later[i]! - later[i - 1]!).toBe(BLOCK_SECONDS * 1000);
-    }
+    // What an auditor needs: one boundary per block, each a whole number of
+    // blocks after the clock started, spaced by exactly block_seconds.
+    // Systematic shortening shows up as a violation here.
+    expect(new Set(boundaries).size).toBe(6);
+    boundaries.forEach((boundary, i) => {
+      expect(boundary - startedAt).toBe((i + 1) * BLOCK_SECONDS * 1000);
+    });
   });
 });
