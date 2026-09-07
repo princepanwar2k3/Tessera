@@ -1,0 +1,16 @@
+[Unit]
+Description=Tessera provider daemon
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tessera/packages/daemon
+EnvironmentFile=/opt/tessera/packages/daemon/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=3
+User=tessera
+
+[Install]
+WantedBy=multi-user.target

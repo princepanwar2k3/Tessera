@@ -9,12 +9,8 @@ dist/
 *.sqlite
 .DS_Store
 artifacts/
+data/
 
-# Local-only: personal agent notes and planning docs.
-# (Patterns match case-insensitively on macOS, so the shared onboarding doc
-# needs an explicit exception to stay committable.)
-CLAUDE.md
-!claude.md
 docs/*
 # Exception: the facilitator contract holds the Phase 0 gate (HashScan link,
 # observed wire shapes) and must be visible to the whole team.
