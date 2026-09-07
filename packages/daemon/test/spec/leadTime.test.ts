@@ -36,3 +36,24 @@ describe("validateLeadTime", () => {
     expect(validateLeadTime(3600, 1079).ok).toBe(false);
   });
 });
+
+describe("validateLeadTime delegates to the protocol's §4.1 validator", () => {
+  it("agrees with @bsp/protocol on every verdict, so the rules cannot drift apart", async () => {
+    const { validateBlockTiming } = await import("@bsp/protocol");
+    for (let blockSeconds = 4; blockSeconds <= 40; blockSeconds++) {
+      for (let leadSeconds = 0; leadSeconds <= blockSeconds + 1; leadSeconds++) {
+        const mine = validateLeadTime(blockSeconds, leadSeconds);
+        const canonical = validateBlockTiming(blockSeconds, leadSeconds);
+        expect(mine.ok).toBe(canonical.length === 0);
+      }
+    }
+  });
+
+  it("carries the protocol's own message as the rejection reason", async () => {
+    const { validateBlockTiming } = await import("@bsp/protocol");
+    const result = validateLeadTime(30, 8);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected a rejection");
+    expect(result.reason).toBe(validateBlockTiming(30, 8)[0]!.message);
+  });
+});

@@ -30,10 +30,20 @@ export function leadTimeFloor(blockSeconds: number): number {
  * Validate a listing per SPEC §4.1.
  * Returns a list of issues (empty = valid). Never throws on bad input.
  */
-export function validateListing(p: Partial<ListingParams>): ListingValidationIssue[] {
+/**
+ * The §4.1 timing rules on their own, for callers that have block and lead
+ * seconds but no price or asset yet — a provider validating its own
+ * configuration, for instance. `validateListing` delegates here so the rules
+ * live in exactly one place.
+ */
+export function validateBlockTiming(
+  blockSeconds: unknown,
+  leadSeconds: unknown,
+): ListingValidationIssue[] {
   const issues: ListingValidationIssue[] = [];
+  const bs = blockSeconds;
+  const ls = leadSeconds;
 
-  const bs = p.blockSeconds;
   if (!Number.isInteger(bs) || (bs as number) < 5 || (bs as number) > 3600) {
     issues.push({
       field: 'blockSeconds',
@@ -42,43 +52,50 @@ export function validateListing(p: Partial<ListingParams>): ListingValidationIss
     });
   }
 
-  const ls = p.leadSeconds;
   if (!Number.isInteger(ls)) {
     issues.push({
       field: 'leadSeconds',
       code: 'lead_integer',
       message: 'leadSeconds must be an integer',
     });
-  } else if (Number.isInteger(bs)) {
-    const floor = leadTimeFloor(bs as number);
-    if ((ls as number) < 4) {
-      issues.push({
-        field: 'leadSeconds',
-        code: 'lead_min_seconds',
-        message: 'leadSeconds must be >= 4',
-      });
-    }
-    if ((ls as number) < floor) {
-      issues.push({
-        field: 'leadSeconds',
-        code: 'lead_floor',
-        message: `leadSeconds must be >= ceil(0.3 * blockSeconds) = ${floor}`,
-      });
-    }
-    if ((ls as number) >= (bs as number)) {
-      issues.push({
-        field: 'leadSeconds',
-        code: 'lead_lt_block',
-        message: 'leadSeconds must be < blockSeconds',
-      });
-    }
-  } else if ((ls as number) < 4) {
+    return issues;
+  }
+
+  if ((ls as number) < 4) {
     issues.push({
       field: 'leadSeconds',
       code: 'lead_min_seconds',
       message: 'leadSeconds must be >= 4',
     });
   }
+
+  if (!Number.isInteger(bs)) return issues;
+
+  const floor = leadTimeFloor(bs as number);
+  if ((ls as number) < floor) {
+    issues.push({
+      field: 'leadSeconds',
+      code: 'lead_floor',
+      message: `leadSeconds must be >= ceil(0.3 * blockSeconds) = ${floor}`,
+    });
+  }
+  if ((ls as number) >= (bs as number)) {
+    issues.push({
+      field: 'leadSeconds',
+      code: 'lead_lt_block',
+      message: 'leadSeconds must be < blockSeconds',
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Validate a listing per SPEC §4.1.
+ * Returns a list of issues (empty = valid). Never throws on bad input.
+ */
+export function validateListing(p: Partial<ListingParams>): ListingValidationIssue[] {
+  const issues: ListingValidationIssue[] = validateBlockTiming(p.blockSeconds, p.leadSeconds);
 
   const price = p.pricePerBlock;
   if (typeof price !== 'string' || !/^[0-9]+$/.test(price)) {
@@ -87,22 +104,12 @@ export function validateListing(p: Partial<ListingParams>): ListingValidationIss
       code: 'price_format',
       message: 'pricePerBlock must be a decimal integer string in smallest units',
     });
-  } else {
-    try {
-      if (BigInt(price) <= 0n) {
-        issues.push({
-          field: 'pricePerBlock',
-          code: 'price_positive',
-          message: 'pricePerBlock must be > 0',
-        });
-      }
-    } catch {
-      issues.push({
-        field: 'pricePerBlock',
-        code: 'price_format',
-        message: 'pricePerBlock must be a decimal integer string in smallest units',
-      });
-    }
+  } else if (BigInt(price) <= 0n) {
+    issues.push({
+      field: 'pricePerBlock',
+      code: 'price_positive',
+      message: 'pricePerBlock must be > 0',
+    });
   }
 
   const asset = p.asset;

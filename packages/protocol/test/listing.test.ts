@@ -37,3 +37,31 @@ describe('§4.1 lead-time floor', () => {
     expect(validateListing({ blockSeconds: 10, leadSeconds: 4, pricePerBlock: '100', asset: '0.0.12345' })).toEqual([]);
   });
 });
+
+describe('§4.1 timing rules, reusable without a full listing', () => {
+  it('reports the same timing issues validateListing would, so there is one source of truth', async () => {
+    const { validateBlockTiming } = await import('../src/listing.js');
+    const cases: [number, number][] = [
+      [30, 10],
+      [30, 3],
+      [30, 8],
+      [10, 10],
+      [4, 4],
+      [3601, 1080],
+      [3600, 1079],
+      [3600, 1080],
+      [20, 5],
+      [20, 6],
+    ];
+    for (const [blockSeconds, leadSeconds] of cases) {
+      const timingOnly = validateBlockTiming(blockSeconds, leadSeconds);
+      const fromListing = validateListing({
+        blockSeconds,
+        leadSeconds,
+        pricePerBlock: '1500',
+        asset: 'HBAR',
+      });
+      expect(timingOnly).toEqual(fromListing);
+    }
+  });
+});
