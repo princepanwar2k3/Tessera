@@ -8,7 +8,7 @@ import { Scheduler } from "./jobs/scheduler.js";
 import { JobService } from "./jobs/job-service.js";
 import { DockerodeRunner } from "./docker/dockerode-runner.js";
 import { MockFacilitatorClient } from "./payments/facilitator-client.js";
-import { LocalFileReceiptSink } from "./receipts/receipt-sink.js";
+import { buildReceiptSink } from "./receipts/build-sink.js";
 import {
   HttpControlPlaneClient,
   NoopControlPlaneClient,
@@ -27,7 +27,7 @@ async function main() {
   const clock = new SystemClock();
   const docker = new DockerodeRunner(logger, config.dockerSocketPath);
   const facilitator = new MockFacilitatorClient();
-  const receiptSink = new LocalFileReceiptSink(config.dataDir);
+  const receiptSink = buildReceiptSink(config, logger);
 
   const controlPlane: ControlPlaneClient = config.controlPlaneUrl
     ? new HttpControlPlaneClient(config.controlPlaneUrl)

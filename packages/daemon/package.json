@@ -17,6 +17,8 @@
     "demo:kill": "tsx scripts/demo-kill.ts"
   },
   "dependencies": {
+    "@bsp/hedera": "workspace:*",
+    "@bsp/protocol": "workspace:*",
     "dockerode": "^4.0.2",
     "fastify": "^4.28.1",
     "pino": "^9.3.2",
