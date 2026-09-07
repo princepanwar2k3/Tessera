@@ -17,15 +17,19 @@
  * So `record()` enqueues and returns. A single drain loop publishes in order,
  * and failures are counted and reported rather than thrown or swallowed.
  */
-import type { PrivateKey } from '@hiero-ledger/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 import type { Receipt } from '@bsp/protocol';
 import type { ReceiptTopic } from './topic.js';
 import { signReceipt } from './signing.js';
 
 export interface HcsReceiptSinkOptions {
   topic: ReceiptTopic;
-  /** Provider key. A provider-only signature is evidence of a claim (§6.2). */
-  signWith?: PrivateKey;
+  /**
+   * Provider key, as a `PrivateKey` or a DER string so callers need not
+   * depend on the Hedera SDK. A provider-only signature is evidence of a
+   * claim, not of agreement (§6.2).
+   */
+  signWith?: PrivateKey | string;
   /** Called for a receipt that could not be published. */
   onError?: (error: Error, receipt: Receipt) => void;
 }
@@ -42,8 +46,14 @@ export class HcsReceiptSink {
 
   constructor(opts: HcsReceiptSinkOptions) {
     this.topic = opts.topic;
-    this.signWith = opts.signWith;
+    this.signWith =
+      typeof opts.signWith === 'string' ? PrivateKey.fromStringDer(opts.signWith) : opts.signWith;
     this.onError = opts.onError;
+  }
+
+  /** Whether published receipts carry the provider's signature. */
+  get signs(): boolean {
+    return this.signWith !== undefined;
   }
 
   /** Receipts published to the topic. */

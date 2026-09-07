@@ -38,10 +38,21 @@ export function mirrorFor(network: 'testnet' | 'mainnet'): MirrorNodeReader {
   });
 }
 
+/**
+ * Build a consensus client whose writes and reads are on the same network.
+ *
+ * Wiring them separately is a mistake waiting to happen: mainnet receipts
+ * read off the testnet mirror come back as an empty history, which looks
+ * exactly like a provider that never published anything.
+ */
+export function hcsClientFor(creds: OperatorCredentials): HieroHcsClient {
+  return new HieroHcsClient(clientFor(creds), mirrorFor(creds.network));
+}
+
 export class HieroHcsClient implements HcsClient {
   constructor(
     private readonly client: Client,
-    private readonly mirror: MirrorNodeReader = new MirrorNodeReader(),
+    readonly mirror: MirrorNodeReader = new MirrorNodeReader(),
   ) {}
 
   /**

@@ -1,8 +1,7 @@
 import {
   HcsReceiptSink,
-  HieroHcsClient,
   ReceiptTopic,
-  clientFor,
+  hcsClientFor,
   type OperatorCredentials,
 } from "@bsp/hedera";
 import type { Config } from "../config.js";
@@ -30,7 +29,11 @@ export function buildReceiptSink(config: Config, logger?: Logger): ReceiptSink {
     operatorKey: config.hederaOperatorKey!,
   };
   const hcs = new HcsReceiptSink({
-    topic: new ReceiptTopic(new HieroHcsClient(clientFor(credentials)), config.hcsTopicId!),
+    topic: new ReceiptTopic(hcsClientFor(credentials), config.hcsTopicId!),
+    // A receipt nobody signed is not evidence of anything. The provider's
+    // signature makes it evidence of a claim; the renter's, added by the SDK,
+    // makes it evidence of agreement (§6.2).
+    signWith: config.hederaOperatorKey!,
     onError: (error, receipt) => {
       // Loud, but never fatal: the block was paid whatever consensus did.
       logger?.error(
@@ -39,6 +42,16 @@ export function buildReceiptSink(config: Config, logger?: Logger): ReceiptSink {
       );
     },
   });
+
+  logger?.info(
+    {
+      sink: config.receiptSink,
+      topicId: config.hcsTopicId,
+      network: config.hederaNetwork,
+      signed: hcs.signs,
+    },
+    "publishing receipts to HCS",
+  );
 
   return config.receiptSink === "hcs" ? hcs : new TeeReceiptSink([local, hcs]);
 }

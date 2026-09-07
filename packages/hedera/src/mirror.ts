@@ -27,7 +27,8 @@ interface MirrorMessage {
 }
 
 export class MirrorNodeReader {
-  private readonly baseUrl: string;
+  /** Exposed so an operator can see which network reads actually go to. */
+  readonly baseUrl: string;
   private readonly fetch: FetchLike;
 
   constructor(opts: MirrorNodeOptions = {}) {

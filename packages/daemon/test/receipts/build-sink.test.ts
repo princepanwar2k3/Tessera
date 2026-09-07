@@ -27,4 +27,9 @@ describe("buildReceiptSink", () => {
     const sink = buildReceiptSink(loadConfig({ ...hederaEnv, RECEIPT_SINK: "local+hcs" }));
     expect(sink).toBeInstanceOf(TeeReceiptSink);
   });
+
+  it("signs published receipts with the operator key (plan: both signatures where available)", () => {
+    const sink = buildReceiptSink(loadConfig({ ...hederaEnv, RECEIPT_SINK: "hcs" }));
+    expect((sink as HcsReceiptSink).signs).toBe(true);
+  });
 });

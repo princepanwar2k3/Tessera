@@ -179,3 +179,24 @@ describe('HcsReceiptSink: enqueueing while a drain is finishing', () => {
     expect(sink.published).toBe(6);
   });
 });
+
+describe('HcsReceiptSink: signing configuration', () => {
+  it('accepts a DER-encoded key string, so callers need not import the SDK', async () => {
+    const hcs = new BlockingHcs();
+    const key = PrivateKey.generateECDSA();
+    const sink = sinkOn(hcs, { signWith: key.toStringDer() });
+
+    expect(sink.signs).toBe(true);
+    await sink.record(receipt());
+    hcs.releaseAll();
+    await sink.drain();
+
+    const { verifyReceiptSignature } = await import('../src/signing.js');
+    const published = JSON.parse(hcs.sent[0]!) as BlockReceipt;
+    expect(verifyReceiptSignature(published, key.publicKey, 'provider')).toBe(true);
+  });
+
+  it('reports when it is publishing unsigned receipts', () => {
+    expect(sinkOn(new BlockingHcs()).signs).toBe(false);
+  });
+});
