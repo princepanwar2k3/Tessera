@@ -96,3 +96,15 @@ function sortKeys(x: unknown): unknown {
   }
   return x;
 }
+
+/**
+ * The bytes both parties sign — the canonical form with the signature fields
+ * stripped. If the signatures were covered, the renter would be signing bytes
+ * that already contained the provider's signature, so the two signatures would
+ * cover different messages and neither would verify against what was
+ * published. Strip them and both sign the same receipt.
+ */
+export function receiptSigningBytes(r: Receipt): string {
+  const { providerSig: _p, renterSig: _r, ...rest } = r as Receipt & Record<string, unknown>;
+  return JSON.stringify(sortKeys(rest));
+}
