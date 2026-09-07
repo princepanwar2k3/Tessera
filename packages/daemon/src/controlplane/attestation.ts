@@ -1,30 +1,21 @@
-import { createHash } from "node:crypto";
-
-export interface AttestationResult {
-  score: number;
-  unit: "hashes_per_sec";
-  ranAt: string;
-  note: string;
-}
-
 /**
- * Placeholder benchmark, NOT real hardware attestation. Raises the cost of
- * lying about hardware; does not make lying impossible. A production
- * version would need real remote attestation. Documented as a boundary,
- * not hidden as a limitation (see PLAN.md §7 "Status" guidance).
+ * The provider's self-reported benchmark.
+ *
+ * NOT hardware attestation — SPEC §9 puts that out of scope. It raises the
+ * cost of lying about hardware; it does not make lying impossible. The
+ * `selfReported` flag on the result says so structurally, so no listing can
+ * present the number as verified.
+ *
+ * The benchmark itself is `bsp-bench-v1` from @bsp/protocol, deliberately not
+ * a daemon-local one. A score is only worth publishing if another provider's
+ * score means the same thing, and that requires every provider to run
+ * byte-identical work — which is why the protocol pins the workload by
+ * checksum rather than just naming it.
  */
-export function runBenchmark(iterations = 200_000): AttestationResult {
-  const start = performance.now();
-  let buffer = Buffer.from("tessera-attestation-seed");
-  for (let i = 0; i < iterations; i++) {
-    buffer = createHash("sha256").update(buffer).digest();
-  }
-  const elapsedSeconds = (performance.now() - start) / 1000;
-  const score = Math.round(iterations / elapsedSeconds);
-  return {
-    score,
-    unit: "hashes_per_sec",
-    ranAt: new Date().toISOString(),
-    note: "CPU timing benchmark only; not a cryptographic hardware attestation.",
-  };
-}
+export {
+  runBenchmark,
+  BENCH_NAME,
+  BENCH_WORK_UNITS,
+  type BenchmarkResult,
+  type BenchmarkResult as AttestationResult,
+} from "@bsp/protocol";
