@@ -1,50 +1,131 @@
 /**
- * Machine listing + attestation benchmark shape (Phase 1 Track B).
- * Registry-advertised; blockSeconds/leadSeconds reuse the §4.1 validator.
+ * Machine listing — what a provider advertises at discovery and what the
+ * console renders. SPEC §4's parameters are carried verbatim in `params`,
+ * so the §4.1 floor is enforced by one validator in one place.
  */
-import type { ListingParams } from './listing.js';
+import { validateListing, type ListingParams } from './listing.js';
+import { BENCH_NAME, type BenchmarkResult } from './bench.js';
 
 export interface MachineSpecs {
-  cpu: string;
+  cpuCores: number;
   memoryMB: number;
+  arch: string;
   gpu?: string;
-  arch?: string;
 }
 
-export interface AttestationBenchmark {
-  /** Name of the fixed microbenchmark, e.g. "bsp-bench-v1" */
-  name: string;
-  /** Single comparable number; higher = faster. Honestly labelled, not attested. */
-  score: number;
-  /** When the benchmark was run, RFC3339 millis */
-  ranAt: string;
-  /** Full `blockSeconds` the provider used while benchmarking (for context) */
-  blockSeconds: number;
-}
-
-export interface MachineListing extends ListingParams {
+export interface MachineListing {
   machineId: string;
   providerId: string;
+  /** Daemon base URL the renter pays and streams against. */
   endpoint: string;
   specs: MachineSpecs;
-  benchmark: AttestationBenchmark;
-  live?: boolean;
-  updatedAt?: string;
+  params: ListingParams;
+  benchmark: BenchmarkResult;
 }
 
-export function validateMachineListing(m: unknown): string[] {
-  const issues: string[] = [];
-  if (typeof m !== 'object' || m === null) return ['listing must be an object'];
-  const r = m as Record<string, unknown>;
-  for (const f of ['machineId', 'providerId', 'endpoint', 'specs', 'benchmark']) {
-    if (r[f] === undefined) issues.push(`missing ${f}`);
+export interface MachineListingIssue {
+  field: string;
+  code: string;
+  message: string;
+}
+
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+export function validateMachineListing(m: unknown): MachineListingIssue[] {
+  if (!isRecord(m)) {
+    return [{ field: '', code: 'not_an_object', message: 'listing must be an object' }];
   }
-  const b = r['benchmark'] as Record<string, unknown> | undefined;
-  if (b !== undefined) {
-    if (typeof b['name'] !== 'string' || (b['name'] as string).length === 0)
-      issues.push('benchmark.name required');
-    if (typeof b['score'] !== 'number' || !Number.isFinite(b['score'] as number))
-      issues.push('benchmark.score must be a finite number');
+  const r = m as unknown as MachineListing;
+  const issues: MachineListingIssue[] = [];
+
+  for (const f of ['machineId', 'providerId', 'endpoint'] as const) {
+    if (typeof r[f] !== 'string' || r[f].length === 0) {
+      issues.push({ field: f, code: 'required', message: `${f} is required` });
+    }
   }
+  if (typeof r.endpoint === 'string' && r.endpoint.length > 0 && !isHttpUrl(r.endpoint)) {
+    issues.push({
+      field: 'endpoint',
+      code: 'endpoint_url',
+      message: 'endpoint must be an http(s) URL',
+    });
+  }
+
+  if (!isRecord(r.specs)) {
+    issues.push({ field: 'specs', code: 'required', message: 'specs is required' });
+  } else {
+    for (const f of ['cpuCores', 'memoryMB'] as const) {
+      const v = r.specs[f];
+      if (!Number.isInteger(v) || v <= 0) {
+        issues.push({
+          field: `specs.${f}`,
+          code: 'positive_integer',
+          message: `specs.${f} must be an integer > 0`,
+        });
+      }
+    }
+    if (typeof r.specs.arch !== 'string' || r.specs.arch.length === 0) {
+      issues.push({ field: 'specs.arch', code: 'required', message: 'specs.arch is required' });
+    }
+  }
+
+  if (!isRecord(r.benchmark)) {
+    issues.push({ field: 'benchmark', code: 'required', message: 'benchmark is required' });
+  } else {
+    const b = r.benchmark as unknown as Record<string, unknown>;
+    if (b['name'] !== BENCH_NAME) {
+      issues.push({
+        field: 'benchmark.name',
+        code: 'benchmark_name',
+        message: `benchmark.name must be "${BENCH_NAME}" — other benchmarks are not comparable`,
+      });
+    }
+    if (b['selfReported'] !== true) {
+      issues.push({
+        field: 'benchmark.selfReported',
+        code: 'not_attested',
+        message: 'benchmark.selfReported must be true — BSP has no attestation (SPEC §9)',
+      });
+    }
+    const score = b['score'];
+    if (typeof score !== 'number' || !Number.isFinite(score) || score <= 0) {
+      issues.push({
+        field: 'benchmark.score',
+        code: 'score_positive',
+        message: 'benchmark.score must be a finite number > 0',
+      });
+    }
+    if (typeof b['ranAt'] !== 'string' || Number.isNaN(Date.parse(b['ranAt']))) {
+      issues.push({
+        field: 'benchmark.ranAt',
+        code: 'ran_at',
+        message: 'benchmark.ranAt must be an RFC3339 timestamp',
+      });
+    }
+  }
+
+  for (const i of validateListing(r.params ?? {})) {
+    issues.push({ field: `params.${i.field}`, code: i.code, message: i.message });
+  }
+
   return issues;
+}
+
+function isHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** Throwing form, for a provider validating its own listing at startup. */
+export function assertValidMachineListing(m: unknown): asserts m is MachineListing {
+  const issues = validateMachineListing(m);
+  if (issues.length > 0) {
+    throw new Error(`invalid machine listing: ${issues.map((i) => i.message).join('; ')}`);
+  }
 }
