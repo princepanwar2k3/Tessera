@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { serializeReceiptCanonical, type BlockReceipt } from '../src/receipts.js';
+import {
+  serializeReceiptCanonical,
+  validateReceipt,
+  type BlockReceipt,
+  type TerminalReceipt,
+} from '../src/receipts.js';
 
 const receipt = (over: Partial<BlockReceipt> = {}): BlockReceipt => ({
   v: 1,
@@ -52,5 +57,22 @@ describe('receipt signing bytes', () => {
         receiptSigningBytes(base),
       );
     }
+  });
+});
+
+describe('terminal receipts', () => {
+  it('carry the UAIDs SPEC §6.2 shows, so the published shape is declared not accidental', () => {
+    const terminal: TerminalReceipt = {
+      v: 1,
+      protocol: 'bsp/0.1',
+      type: 'terminated',
+      jobId: 'job_7',
+      reason: 'unpaid_boundary',
+      finalBlockIndex: 4,
+      providerUaid: 'uaid:aid:provider',
+      renterUaid: 'uaid:aid:renter',
+    };
+    expect(validateReceipt(terminal)).toEqual([]);
+    expect(serializeReceiptCanonical(terminal)).toContain('"providerUaid":"uaid:aid:provider"');
   });
 });

@@ -30,6 +30,8 @@ export interface TerminalReceipt {
   jobId: string;
   reason: string;
   finalBlockIndex: number;
+  providerUaid?: string;
+  renterUaid?: string;
   clockStartedAt?: string;
   providerSig?: string;
   renterSig?: string;
