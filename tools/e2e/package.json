@@ -1,0 +1,23 @@
+{
+  "name": "@bsp/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bsp/control-plane": "workspace:*",
+    "@bsp/daemon": "workspace:*",
+    "@bsp/protocol": "workspace:*",
+    "@bsp/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.15",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
