@@ -1,25 +1,24 @@
 {
-  "name": "@bsp/e2e",
+  "name": "@bsp/agent",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "engines": { "node": ">=20" },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo": "tsx src/cli.ts"
   },
   "dependencies": {
-    "@bsp/control-plane": "workspace:*",
-    "@bsp/daemon": "workspace:*",
     "@bsp/protocol": "workspace:*",
-    "@bsp/sdk": "workspace:*",
-    "@bsp/agent": "workspace:*"
+    "@bsp/sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.14.15",
+    "tsx": "^4.16.5",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   }

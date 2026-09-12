@@ -18,6 +18,28 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.1)(terser@5.51.2)
 
+  packages/agent:
+    dependencies:
+      '@bsp/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@bsp/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.15
+        version: 20.19.43
+      tsx:
+        specifier: ^4.16.5
+        version: 4.23.13
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.19.43)(terser@5.51.2)
+
   packages/control-plane:
     dependencies:
       '@bsp/hedera':
@@ -151,6 +173,9 @@ importers:
 
   tools/e2e:
     dependencies:
+      '@bsp/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@bsp/control-plane':
         specifier: workspace:*
         version: link:../../packages/control-plane
