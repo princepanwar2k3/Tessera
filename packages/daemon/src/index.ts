@@ -8,6 +8,8 @@ import { Scheduler } from "./jobs/scheduler.js";
 import { JobService } from "./jobs/job-service.js";
 import { DockerodeRunner } from "./docker/dockerode-runner.js";
 import { MockFacilitatorClient } from "./payments/facilitator-client.js";
+import { Blocky402FacilitatorClient } from "./payments/blocky402-client.js";
+import type { FacilitatorClient } from "./payments/facilitator-client.js";
 import { buildReceiptSink } from "./receipts/build-sink.js";
 import {
   buildMachineListing,
@@ -29,7 +31,14 @@ async function main() {
   const jobStore = new JobStore(config.dataDir);
   const clock = new SystemClock();
   const docker = new DockerodeRunner(logger, config.dockerSocketPath);
-  const facilitator = new MockFacilitatorClient();
+  const facilitator: FacilitatorClient =
+    config.facilitatorMode === "blocky402"
+      ? new Blocky402FacilitatorClient(
+          { baseUrl: config.facilitatorUrl, feePayer: config.facilitatorFeePayer! },
+          logger,
+        )
+      : new MockFacilitatorClient();
+  logger.info({ mode: config.facilitatorMode }, "facilitator selected");
   const receiptSink = buildReceiptSink(config, logger);
 
   const controlPlane: ControlPlaneClient = config.controlPlaneUrl
@@ -50,7 +59,7 @@ async function main() {
       providerUaid: config.providerUaid,
       network: config.network,
       payTo: config.payTo,
-      facilitatorUrl: "https://facilitator.blocky402.com",
+      facilitatorUrl: config.facilitatorUrl,
     },
     logger,
     jobStore,

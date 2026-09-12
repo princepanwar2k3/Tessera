@@ -6,7 +6,10 @@ const ConfigSchema = z.object({
   dataDir: z.string().default("./data"),
   dockerSocketPath: z.string().default("/var/run/docker.sock"),
   controlPlaneUrl: z.string().url().optional(),
-  facilitatorMode: z.enum(["mock"]).default("mock"),
+  facilitatorMode: z.enum(["mock", "blocky402"]).default("mock"),
+  facilitatorUrl: z.string().url().default("https://api.testnet.blocky402.com"),
+  /** The facilitator's advertised fee payer, from GET /supported. */
+  facilitatorFeePayer: z.string().optional(),
   receiptSink: z.enum(["local", "hcs", "local+hcs"]).default("local"),
   hcsTopicId: z.string().optional(),
   hederaNetwork: z.enum(["testnet", "mainnet"]).default("testnet"),
@@ -29,6 +32,16 @@ const ConfigSchema = z.object({
 });
 
 const Config = ConfigSchema.superRefine((c, ctx) => {
+  // Every Hedera requirement must carry the facilitator's advertised fee
+  // payer, which co-signs and submits the transfer. Without it nothing can
+  // settle, so refuse to boot rather than fail at the first payment.
+  if (c.facilitatorMode === "blocky402" && c.facilitatorFeePayer === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'facilitatorMode "blocky402" requires FACILITATOR_FEE_PAYER (see GET /supported)',
+    });
+  }
+
   if (c.receiptSink === "local") return;
   // A provider that thinks it is publishing receipts and is not is worse than
   // one that never claimed to: the audit log SPEC §8 relies on would be
@@ -57,6 +70,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dockerSocketPath: env.DOCKER_SOCKET_PATH,
     controlPlaneUrl: env.CONTROL_PLANE_URL || undefined,
     facilitatorMode: env.FACILITATOR_MODE,
+    facilitatorUrl: env.FACILITATOR_URL,
+    facilitatorFeePayer: env.FACILITATOR_FEE_PAYER || undefined,
     receiptSink: env.RECEIPT_SINK,
     hcsTopicId: env.HCS_RECEIPT_TOPIC_ID || undefined,
     hederaNetwork: env.HEDERA_NETWORK,
