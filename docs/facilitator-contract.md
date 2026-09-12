@@ -78,6 +78,39 @@ defaults `SPIKE_RECEIVER` to the operator, so a single-account setup fails with
 a message that does not mention the real cause. Provider and renter must be
 different accounts — which is also true of any real BSP deployment.
 
+## 3a. Verify and settle, called directly (OBSERVED)
+
+`packages/daemon/src/payments/blocky402-client.ts` does not use the express
+middleware; it calls the two endpoints itself. Both take the same body:
+
+```json
+{"x402Version": 2, "paymentPayload": {…}, "paymentRequirements": {…}}
+```
+
+Observed responses, with the payload built by
+`x402Client.createPaymentPayload()`:
+
+| Call | ms | Response |
+|---|---|---|
+| `POST /verify` | 1075 | `{"isValid":true,"payer":"0.0.10401938"}` |
+| `POST /settle` | 3692 | `{"success":true,"transaction":"0.0.7162784@1789239459.659142644","network":"hedera:testnet","payer":"0.0.10401938"}` |
+| `POST /settle` again | — | `{"success":false,"errorReason":"transaction_failed","errorMessage":"transaction … failed precheck with status DUPLICATE_TRANSACTION …","transaction":"","network":"hedera:testnet","payer":"0.0.10401938"}` |
+
+**The facilitator is not idempotent.** A second settle of the same payload does
+not return the original transaction — it fails `DUPLICATE_TRANSACTION` and
+returns an **empty** `transaction` field. SPEC §6.3 requires a duplicate
+payment for a settled block to return the existing receipt unchanged, so that
+guarantee is the *daemon's* to keep, not the facilitator's.
+
+The daemon already keeps it: `decidePayment()` returns `idempotent_replay`
+with the stored receipt before the facilitator is called at all, keyed on
+`(jobId, blockIndex)`. That guard is load-bearing, not belt-and-braces — the
+test `daemon/test/payments/blocky402-client.test.ts` pins the behaviour.
+
+**Timing consequence.** Verify plus settle is ~4.8s when called separately,
+which is *more* than the 4s protocol floor. A provider using this client must
+list `lead_seconds >= 8`. See §5.
+
 ## 4. Client-side gotchas (OBSERVED)
 
 Two things that are easy to get wrong and produce misleading errors:

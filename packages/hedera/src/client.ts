@@ -7,8 +7,8 @@
  * cannot be verified without a funded testnet account is also the part with
  * nothing in it to get wrong.
  *
- * UNVERIFIED against a live network — no credentials in this workspace. See
- * docs/facilitator-contract.md §5, which still holds the Phase 0 gate.
+ * Verified against Hedera testnet on 2026-09-13 (topic create, message
+ * submit, mirror read). See docs/facilitator-contract.md.
  */
 import {
   Client,
@@ -23,12 +23,47 @@ export interface OperatorCredentials {
   network: 'testnet' | 'mainnet';
   operatorId: string;
   operatorKey: string;
+  /**
+   * How to parse `operatorKey`. Omit to detect it — see `parsePrivateKey`.
+   * Set it explicitly when the key is a raw ED25519 hex string, which is
+   * indistinguishable from raw ECDSA by shape alone.
+   */
+  keyType?: 'ecdsa' | 'ed25519' | 'der';
+}
+
+/** DER-encoded Hedera private keys start with a SEQUENCE header. */
+const DER_PREFIX = /^(0x)?30[0-9a-fA-F]{2}/;
+
+/**
+ * Parse an operator key without guessing wrong in silence.
+ *
+ * Using the wrong parser does not throw: it yields a valid-looking key that
+ * signs nothing the network accepts, and every transaction comes back
+ * `INVALID_SIGNATURE` with no hint that the key was the problem. That cost a
+ * live debugging session, so the detection is explicit here and overridable.
+ *
+ * Raw ECDSA and raw ED25519 are both 64 hex characters and cannot be told
+ * apart by shape. ECDSA is the default because Hedera's portal issues ECDSA
+ * accounts and x402 requires them; pass `keyType: 'ed25519'` otherwise.
+ */
+export function parsePrivateKey(key: string, keyType?: OperatorCredentials['keyType']): PrivateKey {
+  const trimmed = key.trim();
+  const explicit = keyType ?? (DER_PREFIX.test(trimmed) ? 'der' : 'ecdsa');
+
+  switch (explicit) {
+    case 'der':
+      return PrivateKey.fromStringDer(trimmed);
+    case 'ed25519':
+      return PrivateKey.fromStringED25519(trimmed);
+    case 'ecdsa':
+      return PrivateKey.fromStringECDSA(trimmed);
+  }
 }
 
 export function clientFor(creds: OperatorCredentials): Client {
   const client =
     creds.network === 'mainnet' ? Client.forMainnet() : Client.forTestnet();
-  client.setOperator(creds.operatorId, PrivateKey.fromStringDer(creds.operatorKey));
+  client.setOperator(creds.operatorId, parsePrivateKey(creds.operatorKey, creds.keyType));
   return client;
 }
 
