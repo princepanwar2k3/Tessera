@@ -67,13 +67,26 @@ lead_seconds < ceil(0.3 * block_seconds)
 lead_seconds >= block_seconds
 ```
 
-Rationale: a window shorter than roughly four seconds cannot reliably accommodate facilitator round-trip time, so every job would die at its first boundary. A misconfigured provider must not be able to make the protocol look broken. The upper bound prevents a window that spans the entire block, which would make prepayment meaningless.
+Rationale: a window must accommodate at least one facilitator round trip, or every job would die at its first boundary. A misconfigured provider must not be able to make the protocol look broken. The upper bound prevents a window that spans the entire block, which would make prepayment meaningless.
+
+The four-second floor is a **measurement, not an estimate**. Against Blocky402 on
+Hedera testnet the full paid leg — `402` → sign → verify → settle → `200` — takes a
+median of **3.2 seconds** (range 3.0–3.7s, n=5); see `docs/facilitator-contract.md` §5.
+So four seconds admits exactly one attempt, with well under a second to spare.
+
+Providers SHOULD NOT list at the floor. A listing that wants room to retry a failed
+settlement inside the window needs `lead_seconds >= 8`; the reference default of 10
+seconds admits three attempts, which is what §7's "a 10s window permits several
+attempts" relies on. The floor exists to reject the unusable, not to describe the
+advisable.
 
 ### 4.2 Granularity as a market variable
 
 The protocol deliberately does not fix `block_seconds`. Shorter blocks mean less forfeited time on the final block and finer renter control; longer blocks mean fewer settlements and greater tolerance for network trouble. Providers select a point on that curve and renters compare listings on it alongside price and specification.
 
-Reference default: `block_seconds = 30`, `lead_seconds = 10`.
+Reference default: `block_seconds = 30`, `lead_seconds = 10`. For a short
+demonstration, prefer `20`/`8` over `10`/`4`: the latter sits on the floor and leaves a
+single settlement attempt between the renter and a dead job.
 
 ## 5. Job lifecycle
 
@@ -230,7 +243,7 @@ Receipts SHOULD carry both signatures. A receipt with only the provider's signat
 | Service exits early | Remaining block forfeited (§5.6) |
 | Provider fails mid-block | Renter loses at most that block. Provider MUST emit `aborted` on recovery. |
 | Renter disappears | Job terminates at the next boundary. No cleanup handshake required. |
-| Facilitator times out during renewal | Renter SHOULD retry within the window. A 10s window permits several attempts. |
+| Facilitator times out during renewal | Renter SHOULD retry within the window. At a measured 3.2s per attempt, a 10s window permits three. |
 
 ## 8. Security considerations
 

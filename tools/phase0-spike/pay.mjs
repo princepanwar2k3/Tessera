@@ -25,7 +25,22 @@ const signer = createClientHederaSigner(
   PrivateKey.fromStringECDSA(PAYER_KEY),
   { network: 'hedera:testnet' },
 );
-const client = new x402Client().register('hedera:testnet', new ExactHederaScheme(signer));
+// HBAR is asset "0.0.0", which `findDefaultAsset` does not recognise, so the
+// client's default spend controls reject it outright with "All payment
+// requirements were rejected by spendControls". Opt HBAR in explicitly and
+// keep an atomic per-payment cap rather than switching controls off: the cap
+// is what stops a misread requirement from spending real money on mainnet.
+const HBAR_PER_PAYMENT_CAP = '1000000'; // 0.01 HBAR in tinybars; spike pays 0.001
+// NOTE: the x402Client constructor takes a *requirements selector*, not a
+// config object — passing `{ spendControls }` there is silently ignored.
+// Controls go through setSpendControls().
+const client = new x402Client()
+  .setSpendControls({
+    allowedAssets: [
+      { network: 'hedera:testnet', asset: '0.0.0', maxAmountPerPayment: HBAR_PER_PAYMENT_CAP },
+    ],
+  })
+  .register('hedera:testnet', new ExactHederaScheme(signer));
 const httpClient = new x402HTTPClient(client);
 const fetchWithPayment = wrapFetchWithPayment(fetch, client);
 
