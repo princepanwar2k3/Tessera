@@ -3,8 +3,15 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "composite": true
+    "composite": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "references": [{ "path": "../protocol" }],
-  "include": ["src/**/*"]
+  "references": [
+    {
+      "path": "../protocol"
+    }
+  ],
+  "include": [
+    "src/**/*"
+  ]
 }
