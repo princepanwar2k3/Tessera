@@ -20,6 +20,7 @@ import { decidePayment } from "../payments/payment-gate.js";
 import type { ReceiptSink } from "../receipts/receipt-sink.js";
 import { buildBlockReceipt } from "../receipts/receipt-builder.js";
 import type { Logger } from "../logging.js";
+import { snapshotOf, type JobEventBus } from "../events/job-events.js";
 
 export interface CreateJobInput {
   renterUaid: string;
@@ -55,6 +56,7 @@ export class JobService {
     private readonly config: JobServiceConfig,
     private readonly logger: Logger,
     private readonly jobStore?: JobStore,
+    private readonly events?: JobEventBus,
   ) {}
 
   createJob(
@@ -128,6 +130,7 @@ export class JobService {
     await this.receiptSink.record(receipt);
     void this.jobStore?.save(job);
     this.logger.info({ jobId, blockIndex, txId: result.txId }, "block settled");
+    this.events?.publish({ type: "block", jobId, blockIndex, receipt });
 
     return { status: 200, body: receipt };
   }
@@ -160,17 +163,74 @@ export class JobService {
     job.blockIndex = next.nextBlockIndex;
     job.boundaryAt = next.nextBoundaryAt;
     void this.jobStore?.save(job);
+    this.events?.publish({
+      type: "advanced",
+      jobId: job.id,
+      blockIndex: job.blockIndex,
+      boundaryAt: new Date(next.nextBoundaryAt).toISOString(),
+    });
   }
 
   /** Called by the Scheduler when a job's boundary passes unpaid. */
   async handleTerminate(job: Job, reason: TerminationReason): Promise<void> {
-    await terminateJob(job, reason, {
+    const receipt = await terminateJob(job, reason, {
       docker: this.docker,
       receiptSink: this.receiptSink,
       graceMs: this.config.graceMs,
       providerUaid: this.config.providerUaid,
     });
     void this.jobStore?.save(job);
+    this.events?.publish({
+      type: "terminated",
+      jobId: job.id,
+      reason,
+      finalBlockIndex: job.blockIndex,
+      receipt,
+    });
+  }
+
+  /**
+   * SPEC §5.3 — publish the renewal challenge for `blockIndex` on the event
+   * stream. The same requirement is served by the 402 on the block resource,
+   * so a renter that ignores the stream still renews correctly.
+   */
+  announceRenewal(job: Job, blockIndex: number): void {
+    if (!this.events) return;
+    const requirement = this.buildPaymentRequirement(job, blockIndex);
+    const boundaryAt = job.boundaryAt ?? this.clock.now();
+    this.events.publish({
+      type: "renewal",
+      jobId: job.id,
+      blockIndex,
+      windowOpensAt: requirement.blockMeta.windowOpensAt,
+      boundaryAt: requirement.blockMeta.boundaryAt,
+      msLeft: Math.max(0, boundaryAt - this.clock.now()),
+      requirement,
+    });
+  }
+
+  /** The `state` event every SSE connection opens with. */
+  snapshot(jobId: string): ReturnType<typeof snapshotOf> | undefined {
+    const job = this.registry.get(jobId);
+    return job ? snapshotOf(job) : undefined;
+  }
+
+  /**
+   * SPEC §5.5 — artifacts from paid blocks, delivered even when the job ended
+   * `expired`. The renter paid for that work.
+   */
+  getArtifacts(
+    jobId: string,
+  ): HttpResult<{ jobId: string; status: string; artifacts: Job["artifacts"] } | { error: string }> {
+    const job = this.registry.get(jobId);
+    if (!job) return { status: 404, body: { error: "job_not_found" } };
+    if (!job.artifacts) {
+      return { status: 409, body: { error: "artifacts_not_ready" } };
+    }
+    return {
+      status: 200,
+      body: { jobId: job.id, status: job.status, artifacts: job.artifacts },
+    };
   }
 
   private async startContainer(job: Job): Promise<void> {

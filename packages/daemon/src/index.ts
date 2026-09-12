@@ -17,12 +17,14 @@ import {
 import { runBenchmark } from "./controlplane/attestation.js";
 import { collectHardwareSpecs } from "./controlplane/specs.js";
 import { buildServer } from "./server.js";
+import { JobEventBus } from "./events/job-events.js";
 
 async function main() {
   const config = loadConfig();
   const logger = createLogger(config.providerId);
 
   const registry = new JobRegistry();
+  const events = new JobEventBus();
   const jobStore = new JobStore(config.dataDir);
   const clock = new SystemClock();
   const docker = new DockerodeRunner(logger, config.dockerSocketPath);
@@ -51,6 +53,7 @@ async function main() {
     },
     logger,
     jobStore,
+    events,
   );
 
   const scheduler = new Scheduler(
@@ -60,6 +63,7 @@ async function main() {
     (job, reason) => service.handleTerminate(job, reason),
     logger,
     config.watchdogIntervalMs,
+    (job, blockIndex) => service.announceRenewal(job, blockIndex),
   );
   scheduler.start();
 
@@ -80,7 +84,12 @@ async function main() {
     });
   }, 30_000).unref();
 
-  const app = buildServer(service, logger, { providerId: config.providerId, specs, attestation });
+  const app = buildServer(
+    service,
+    logger,
+    { providerId: config.providerId, specs, attestation },
+    events,
+  );
   await app.listen({ port: config.port, host: config.host });
   logger.info({ port: config.port }, "daemon listening");
 

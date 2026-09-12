@@ -114,3 +114,92 @@ describe("Scheduler (watchdog)", () => {
     expect(onTerminate).not.toHaveBeenCalled();
   });
 });
+
+describe("Scheduler — renewal window (SPEC 5.3)", () => {
+  let registry: JobRegistry;
+  let clock: FakeClock;
+  let onWindowOpen: ReturnType<typeof vi.fn>;
+  let scheduler: Scheduler;
+
+  beforeEach(() => {
+    registry = new JobRegistry();
+    clock = new FakeClock(0);
+    onWindowOpen = vi.fn();
+    scheduler = new Scheduler(
+      registry,
+      clock,
+      vi.fn(),
+      vi.fn().mockResolvedValue(undefined),
+      silentLogger,
+      1000,
+      onWindowOpen,
+    );
+  });
+
+  it("opens the window at boundary minus leadSeconds, not before", () => {
+    // 10s block, 4s lead -> window opens at 6s.
+    registry.add(makeJob({ boundaryAt: 10_000, leadSeconds: 4, paidThrough: 1 }));
+    scheduler.start();
+
+    clock.tick(5_000);
+    expect(onWindowOpen).not.toHaveBeenCalled();
+
+    clock.tick(1_000); // 6s
+    expect(onWindowOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("announces the NEXT block, not the one running", () => {
+    const job = makeJob({ blockIndex: 3, paidThrough: 3, boundaryAt: 10_000, leadSeconds: 4 });
+    registry.add(job);
+    scheduler.start();
+
+    clock.tick(6_000);
+
+    expect(onWindowOpen).toHaveBeenCalledWith(job, 4);
+  });
+
+  it("fires once per block even though the watchdog ticks every second", () => {
+    registry.add(makeJob({ boundaryAt: 10_000, leadSeconds: 4, paidThrough: 1 }));
+    scheduler.start();
+
+    clock.tick(9_000); // ticks at 6s, 7s, 8s, 9s all inside the window
+
+    expect(onWindowOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays silent when the renter has already prepaid the next block", () => {
+    registry.add(makeJob({ blockIndex: 1, paidThrough: 2, boundaryAt: 10_000, leadSeconds: 4 }));
+    scheduler.start();
+
+    clock.tick(9_000);
+
+    expect(onWindowOpen).not.toHaveBeenCalled();
+  });
+
+  it("announces again for the following block after an advance", () => {
+    const job = makeJob({ blockIndex: 1, paidThrough: 1, boundaryAt: 10_000, leadSeconds: 4 });
+    registry.add(job);
+    scheduler.start();
+
+    clock.tick(6_000); // window for block 2
+    expect(onWindowOpen).toHaveBeenCalledTimes(1);
+
+    // Renter pays, the boundary advances the job into block 2.
+    job.paidThrough = 2;
+    job.blockIndex = 2;
+    job.boundaryAt = 20_000;
+
+    clock.tick(10_000); // reaches 16s — window for block 3
+    expect(onWindowOpen).toHaveBeenCalledTimes(2);
+    expect(onWindowOpen).toHaveBeenLastCalledWith(job, 3);
+  });
+
+  it("does not announce for a job that is still starting (no clock yet)", () => {
+    registry.add(makeJob({ status: "starting", boundaryAt: undefined, startedAt: undefined }));
+    scheduler.start();
+
+    clock.tick(20_000);
+
+    expect(onWindowOpen).not.toHaveBeenCalled();
+  });
+});
