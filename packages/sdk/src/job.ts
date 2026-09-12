@@ -75,6 +75,13 @@ export class Job {
   private terminalReceipt?: TerminalReceipt;
   /** Blocks with a payment in flight or settled, so nothing is paid twice. */
   private readonly attempted = new Set<number>();
+  /**
+   * Blocks a `renewal` decision has already been reported for. The stream and
+   * the timer fallback both reach `considerRenewal`, and the fallback ticks
+   * several times a second, so without this a declined block reports once per
+   * tick — which spams the renter's log and the console ticker alike.
+   */
+  private readonly announced = new Set<number>();
 
   private resolveResult!: (r: JobResult) => void;
   private readonly completion = new Promise<JobResult>((resolve) => {
@@ -219,12 +226,15 @@ export class Job {
       this.stopped,
     );
 
-    this.emit("renewal", {
-      index: blockIndex,
-      msLeft,
-      willPay: decision.pay,
-      ...(decision.pay ? {} : { reason: decision.reason }),
-    });
+    if (!this.announced.has(blockIndex)) {
+      this.announced.add(blockIndex);
+      this.emit("renewal", {
+        index: blockIndex,
+        msLeft,
+        willPay: decision.pay,
+        ...(decision.pay ? {} : { reason: decision.reason }),
+      });
+    }
 
     // Declining is the whole of the kill switch: do nothing, and the
     // provider's watchdog ends the job at the boundary.

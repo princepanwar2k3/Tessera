@@ -14,6 +14,7 @@ import type { JobStore } from "./job-store.js";
 import type { Clock } from "./clock.js";
 import type { DockerRunner } from "../docker/docker-runner.js";
 import { DEFAULT_RESOURCE_CAPS } from "../docker/container-config.js";
+import type { ResourceCaps } from "../spec/index.js";
 import { terminateJob, type TerminationReason } from "../docker/termination.js";
 import type { FacilitatorClient } from "../payments/facilitator-client.js";
 import { decidePayment } from "../payments/payment-gate.js";
@@ -36,6 +37,8 @@ export interface CreateJobInput {
 export interface JobServiceConfig {
   dataDir: string;
   graceMs: number;
+  /** Overrides for the container hardening defaults. */
+  resourceCaps?: Partial<ResourceCaps> | undefined;
   providerUaid: string;
   network: string;
   payTo: string;
@@ -243,7 +246,7 @@ export class JobService {
       image: job.image,
       cmd: job.cmd,
       env: job.env,
-      caps: DEFAULT_RESOURCE_CAPS,
+      caps: { ...DEFAULT_RESOURCE_CAPS, ...this.config.resourceCaps },
       artifactHostDir,
     });
 

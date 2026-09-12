@@ -56,6 +56,7 @@ async function main() {
     {
       dataDir: config.dataDir,
       graceMs: config.gracePeriodMs,
+      resourceCaps: { noNewPrivileges: config.noNewPrivileges },
       providerUaid: config.providerUaid,
       network: config.network,
       payTo: config.payTo,

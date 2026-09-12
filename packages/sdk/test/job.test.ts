@@ -256,3 +256,46 @@ describe("Job renewal loop", () => {
     job.stopRenewing();
   });
 });
+
+describe("Job renewal reporting", () => {
+  let daemon: FakeDaemon;
+
+  beforeEach(() => {
+    daemon = new FakeDaemon();
+  });
+
+  it("reports a declined block once, not once per fallback tick", async () => {
+    // The fallback ticks several times a second and reaches the same decision
+    // every time; the renter should hear about it once.
+    const job = makeJob(daemon, { maxBlocks: 1, fallbackIntervalMs: 20 });
+    const declines: number[] = [];
+    job.on("renewal", (r) => {
+      if (!r.willPay) declines.push(r.index);
+    });
+    job.noteInitialSettlement(daemon.receipt(1));
+    job.start();
+    await settle(30);
+
+    // Boundary 400ms out with a 4s lead: the window is open the whole time.
+    daemon.emitState({ boundaryAt: new Date(Date.now() + 400).toISOString() });
+    await settle(350);
+
+    expect(declines).toEqual([2]);
+    job.stopRenewing();
+  });
+
+  it("reports a paid block's renewal once even when stream and timer both fire", async () => {
+    const job = makeJob(daemon, { fallbackIntervalMs: 20 });
+    const renewals: number[] = [];
+    job.on("renewal", (r) => renewals.push(r.index));
+    job.start();
+    await settle(30);
+
+    daemon.emitState({ boundaryAt: new Date(Date.now() + 400).toISOString() });
+    daemon.emitRenewal(2);
+    await settle(350);
+
+    expect(renewals.filter((i) => i === 2)).toHaveLength(1);
+    job.stopRenewing();
+  });
+});

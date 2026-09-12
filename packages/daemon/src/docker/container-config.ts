@@ -5,6 +5,7 @@ export const DEFAULT_RESOURCE_CAPS: ResourceCaps = {
   cpus: 1,
   pidsLimit: 128,
   networkMode: "bridge",
+  noNewPrivileges: true,
 };
 
 /**
@@ -22,6 +23,9 @@ export function buildHostConfig(caps: ResourceCaps, artifactHostDir: string) {
     ReadonlyRootfs: true,
     Tmpfs: { "/tmp": "rw,noexec,nosuid,size=64m" },
     Binds: [`${artifactHostDir}:/artifacts:rw`],
-    SecurityOpt: ["no-new-privileges"],
+    // Opt-out rather than opt-in: hardening is the default, and an operator
+    // who disables it has to say so. See ResourceCaps.noNewPrivileges for the
+    // host quirk that makes the escape hatch necessary.
+    ...((caps.noNewPrivileges ?? true) ? { SecurityOpt: ["no-new-privileges"] } : {}),
   };
 }

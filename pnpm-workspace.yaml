@@ -3,7 +3,22 @@ packages:
   - "tools/*"
 allowBuilds:
   better-sqlite3: true
-  cpu-features: true
   esbuild: true
   protobufjs: true
-  ssh2: true
+
+# ssh2 and cpu-features are deliberately NOT built.
+#
+# Both are optional native pieces reached through dockerode: ssh2's sshcrypto
+# binding accelerates SSH ciphers, and cpu-features only picks faster cipher
+# defaults. On some hosts (this one included) those bindings segfault on load,
+# which kills the daemon at import — before any of our code runs, and past any
+# try/catch, because a SIGSEGV is not catchable.
+#
+# ssh2 already guards both loads:
+#
+#     try { cpuInfo = require('cpu-features')(); } catch {}
+#     try { binding = require('./crypto/build/Release/sshcrypto.node'); } catch {}
+#
+# so leaving them unbuilt turns an uncatchable crash into a caught require
+# error and a pure-JS fallback. We give up SSH cipher acceleration, which this
+# project never uses: the daemon talks to Docker over a Unix socket.

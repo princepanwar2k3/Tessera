@@ -111,4 +111,11 @@ export interface ResourceCaps {
   cpus: number;
   pidsLimit?: number;
   networkMode?: string;
+  /**
+   * Set `no-new-privileges` on the container. On by default — we are running
+   * strangers' images. Some hosts (AppArmor plus certain kernels) refuse to
+   * exec *anything* under this flag, with "operation not permitted"; those
+   * operators can turn it off explicitly and knowingly.
+   */
+  noNewPrivileges?: boolean;
 }

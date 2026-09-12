@@ -15,6 +15,14 @@ const ConfigSchema = z.object({
   hederaNetwork: z.enum(["testnet", "mainnet"]).default("testnet"),
   hederaOperatorId: z.string().optional(),
   hederaOperatorKey: z.string().optional(),
+  /**
+   * Hardening for renter-supplied containers. Leave on unless this host
+   * refuses to exec under it — see docs in container-config.ts.
+   */
+  noNewPrivileges: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
   gracePeriodMs: z.coerce.number().int().positive().default(5000),
   watchdogIntervalMs: z.coerce.number().int().positive().default(1000),
   defaultBlockSeconds: z.coerce.number().int().positive().default(30),
@@ -77,6 +85,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     hederaNetwork: env.HEDERA_NETWORK,
     hederaOperatorId: env.HEDERA_OPERATOR_ID || undefined,
     hederaOperatorKey: env.HEDERA_OPERATOR_KEY || undefined,
+    noNewPrivileges: env.NO_NEW_PRIVILEGES,
     gracePeriodMs: env.GRACE_PERIOD_MS,
     watchdogIntervalMs: env.WATCHDOG_INTERVAL_MS,
     defaultBlockSeconds: env.DEFAULT_BLOCK_SECONDS,
