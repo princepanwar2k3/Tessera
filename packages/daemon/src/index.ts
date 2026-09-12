@@ -10,6 +10,7 @@ import { DockerodeRunner } from "./docker/dockerode-runner.js";
 import { MockFacilitatorClient } from "./payments/facilitator-client.js";
 import { buildReceiptSink } from "./receipts/build-sink.js";
 import {
+  buildMachineListing,
   HttpControlPlaneClient,
   NoopControlPlaneClient,
   type ControlPlaneClient,
@@ -71,10 +72,26 @@ async function main() {
   logger.info({ specs }, "hardware specs collected");
   const attestation = runBenchmark();
   logger.info({ attestation }, "attestation benchmark complete");
-  const registration = await controlPlane.register({
+  // Validated here rather than only at the registry: a provider below the
+  // SPEC §4.1 lead-time floor should fail on its own machine, loudly, not
+  // just quietly fail to appear in the marketplace.
+  const endpoint = config.publicUrl ?? `http://127.0.0.1:${config.port}`;
+  const listing = buildMachineListing({
     providerId: config.providerId,
+    endpoint,
     specs,
     attestation,
+    blockSeconds: config.defaultBlockSeconds,
+    leadSeconds: config.defaultLeadSeconds,
+    pricePerBlock: config.pricePerBlock,
+    asset: config.asset,
+  });
+  logger.info({ listing }, "machine listing built");
+
+  const registration = await controlPlane.register({
+    providerId: config.providerId,
+    endpoint,
+    machines: [listing],
   });
   logger.info({ registration }, "registered with control plane");
 
