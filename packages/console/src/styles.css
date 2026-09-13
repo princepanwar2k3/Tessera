@@ -46,8 +46,16 @@
   --step-4: 2.25rem;
   --step-5: 3rem;
 
-  --gap: 1rem;
-  --radius: 6px;
+  --gap: 1.1rem;
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  /* Depth is expressed as light from above plus a cast shadow, not one grey
+     blur under everything. */
+  --lift-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --lift-2: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 6px 22px -8px rgba(0, 0, 0, 0.7);
+  --inset: inset 0 2px 6px rgba(0, 0, 0, 0.45);
+  --hair: rgba(255, 255, 255, 0.055);
 }
 
 @media (prefers-color-scheme: light) {
@@ -67,6 +75,10 @@
     --expired: #8e1e23;
     --ghost: #e5eaed;
     --ring: rgba(199, 120, 0, 0.45);
+    --lift-1: 0 1px 2px rgba(16, 20, 24, 0.06);
+    --lift-2: 0 8px 24px -12px rgba(16, 20, 24, 0.25);
+    --inset: inset 0 1px 4px rgba(16, 20, 24, 0.08);
+    --hair: rgba(16, 20, 24, 0.05);
   }
 }
 
@@ -82,7 +94,9 @@ html {
 
 body {
   margin: 0;
-  background: var(--void);
+  background:
+    radial-gradient(1100px 520px at 12% -8%, color-mix(in srgb, var(--settled) 7%, transparent), transparent 62%),
+    var(--void);
   color: var(--ink);
   font-family: var(--ui);
   font-size: var(--step-1);
@@ -134,10 +148,10 @@ code {
 /* ---------- shell ---------- */
 
 .shell {
-  max-width: 72rem;
+  max-width: 74rem;
   margin: 0 auto;
-  padding-inline: 1.25rem;
-  padding-block: 1.5rem 5rem;
+  padding-inline: 1.5rem;
+  padding-block: 2rem 6rem;
 }
 
 .masthead {
@@ -152,8 +166,9 @@ code {
 }
 
 .masthead__name h1 {
-  font-size: var(--step-3);
-  font-stretch: 118%;
+  font-size: var(--step-4);
+  font-stretch: 122%;
+  letter-spacing: -0.035em;
 }
 
 .masthead__name p {
@@ -177,10 +192,11 @@ code {
   background: var(--card);
   border: 1px solid var(--edge);
   border-radius: var(--radius);
+  box-shadow: var(--lift-1);
 }
 
 .panel {
-  padding: 1.15rem 1.25rem 1.3rem;
+  padding: 1.4rem 1.5rem 1.5rem;
   margin-top: var(--gap);
 }
 
@@ -195,9 +211,10 @@ code {
 
 .panel h2,
 .ticker h2 {
-  font-size: var(--step-1);
-  margin-bottom: 0.65rem;
-  letter-spacing: -0.01em;
+  font-size: var(--step-2);
+  font-stretch: 106%;
+  margin-bottom: 0.8rem;
+  letter-spacing: -0.015em;
 }
 
 .panel__head h2 {
@@ -227,95 +244,142 @@ code {
 
 /* ---------- the meter ---------- */
 
+/* The one place boldness is spent. An instrument face: hairline grid, a rail
+   of readouts, and a recessed tape the blocks sit in. */
 .meter {
-  padding: 1.35rem 1.4rem 1.25rem;
+  position: relative;
+  padding: 1.5rem 1.6rem 1.4rem;
+  border-radius: var(--radius);
+  box-shadow: var(--lift-2);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--raised) 70%, var(--card)) 0%, var(--card) 46%);
+  overflow: hidden;
 }
 
-.meter__head {
+.meter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 70%);
+}
+
+.meter > * {
+  position: relative;
+}
+
+/* A rail of readings, the way an instrument cluster reads. */
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 1.25rem;
+  background: var(--edge-soft);
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.readout {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.1rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 0.95rem 0.85rem;
+  background: color-mix(in srgb, var(--panel) 82%, var(--card));
 }
 
-.meter__count {
+.readout__label {
+  font-size: var(--step-00);
+  color: var(--faint);
+  letter-spacing: 0.06em;
+}
+
+.readout__value {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  margin: 0;
+  gap: 0.35rem;
   font-stretch: 125%;
   font-weight: 600;
-  font-size: var(--step-5);
-  line-height: 0.95;
-  letter-spacing: -0.03em;
+  font-size: var(--step-4);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
 }
 
-.meter__count span {
-  font-size: var(--step-1);
+.readout__value--expired {
+  color: var(--expired);
+}
+
+.readout__unit {
+  font-size: var(--step-0);
   font-stretch: 100%;
   font-weight: 500;
-  color: var(--slate);
+  color: var(--faint);
   letter-spacing: 0;
 }
 
-.meter__spend {
-  margin: 0;
-  text-align: right;
-  font-family: var(--mono);
-  font-size: var(--step-0);
-  color: var(--faint);
+/* The tape is a recess; the blocks sit down inside it. */
+.tape {
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--inset);
 }
 
-.meter__spend b {
-  display: block;
-  color: var(--ink);
-  font-size: var(--step-2);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-/* The strip: one cell per block of service, left to right. */
-.strip {
+.tape__cells {
   display: flex;
   gap: 4px;
   align-items: stretch;
-  min-height: 5rem;
+  min-height: 5.25rem;
   overflow-x: auto;
-  padding: 5px;
-  background: var(--panel);
-  border: 1px solid var(--edge-soft);
-  border-radius: 4px;
   scrollbar-width: thin;
+}
+
+/* The tape runs on past what was bought, so "paid so far" is a position on it. */
+.tape__unbought {
+  flex: 1 0 3rem;
+  border-radius: 3px;
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--hair) 0 1px,
+    transparent 1px 9px
+  );
 }
 
 .block {
   position: relative;
-  flex: 0 0 2.75rem;
+  flex: 0 0 2.9rem;
   background: var(--ghost);
   border-radius: 3px;
   overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .block--settled {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--settled) 88%, white) 0%,
-    var(--settled) 55%
+    color-mix(in srgb, var(--settled) 82%, white) 0%,
+    var(--settled) 52%,
+    color-mix(in srgb, var(--settled) 86%, black) 100%
   );
 }
 
 .block--expired {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--expired) 88%, white) 0%,
-    var(--expired) 55%
+    color-mix(in srgb, var(--expired) 82%, white) 0%,
+    var(--expired) 52%,
+    color-mix(in srgb, var(--expired) 86%, black) 100%
   );
 }
 
 .block--current {
-  background: color-mix(in srgb, var(--settled) 14%, var(--ghost));
+  background: color-mix(in srgb, var(--settled) 12%, var(--ghost));
 }
 
 .block__fill {
@@ -324,31 +388,43 @@ code {
   width: var(--fill, 0%);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--settled) 88%, white) 0%,
-    var(--settled) 55%
+    color-mix(in srgb, var(--settled) 82%, white) 0%,
+    var(--settled) 52%,
+    color-mix(in srgb, var(--settled) 86%, black) 100%
   );
 }
 
-/* Amber, only here, only while a window is open. The one moving thing. */
+/* Where the clock is, right now, inside the block being served. */
+.block__cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: color-mix(in srgb, var(--settled) 40%, white);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--settled) 80%, transparent);
+}
+
+/* Amber, only here, only while a window is open. */
 .block--window {
   box-shadow:
     0 0 0 2px var(--window),
-    0 0 14px 0 var(--ring);
-  animation: breathe 1.4s ease-in-out infinite;
+    0 0 18px -2px var(--ring);
+  animation: breathe 1.5s ease-in-out infinite;
 }
 
 @keyframes breathe {
   50% {
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--window) 55%, transparent),
-      0 0 6px 0 transparent;
+      0 0 0 2px color-mix(in srgb, var(--window) 50%, transparent),
+      0 0 4px -2px transparent;
   }
 }
 
 .block__index {
   position: absolute;
   inset-inline: 0;
-  bottom: 3px;
+  bottom: 4px;
   text-align: center;
   font-family: var(--mono);
   font-size: var(--step-00);
@@ -358,7 +434,7 @@ code {
 .block--settled .block__index,
 .block--expired .block__index,
 .block--current .block__index {
-  color: rgba(8, 14, 12, 0.75);
+  color: rgba(6, 14, 11, 0.72);
   font-weight: 500;
 }
 
@@ -368,15 +444,30 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  margin-top: 0.95rem;
+  margin-top: 1rem;
   font-size: var(--step-0);
   color: var(--slate);
 }
 
 .countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--window);
   font-family: var(--mono);
   font-weight: 500;
+  background: color-mix(in srgb, var(--window) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--window) 32%, transparent);
+  border-radius: 999px;
+  padding: 0.28rem 0.75rem;
+}
+
+.countdown__pip {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--window);
+  box-shadow: 0 0 8px var(--window);
 }
 
 .status {
@@ -482,13 +573,21 @@ code {
 }
 
 .machine {
-  padding: 1.15rem 1.25rem 1.3rem;
+  position: relative;
+  padding: 1.3rem 1.35rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  background: var(--raised);
+  gap: 0.9rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--raised) 78%, var(--card)), var(--card));
   border: 1px solid var(--edge);
   border-radius: var(--radius);
+  box-shadow: var(--lift-1);
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.machine:hover {
+  border-color: color-mix(in srgb, var(--settled) 40%, var(--edge));
+  transform: translateY(-1px);
 }
 
 .machine--renting {
@@ -517,11 +616,11 @@ code {
 }
 
 .machine__amount {
-  font-size: var(--step-4);
+  font-size: var(--step-5);
   font-stretch: 125%;
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.025em;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
 }
 
 .machine__unit {
@@ -572,15 +671,20 @@ code {
 /* ---------- buttons ---------- */
 
 .btn {
-  border: 1px solid var(--settled);
-  background: var(--settled);
+  border: 1px solid color-mix(in srgb, var(--settled) 80%, black);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--settled) 88%, white), var(--settled));
   color: #06120d;
   font-weight: 600;
   font-size: var(--step-0);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--radius-sm);
   align-self: flex-start;
-  transition: filter 120ms ease;
+  box-shadow: var(--lift-1);
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .btn:hover:not(:disabled) {
