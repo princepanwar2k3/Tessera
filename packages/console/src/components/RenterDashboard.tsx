@@ -50,39 +50,41 @@ export function RenterDashboard({ renterId }: { renterId: string }) {
   return (
     <>
       <section className="section">
-        <header className="dash">
-          <div className="section__title">
-            <SectionIcon path={ICON.user} />
-            <div>
-              <h2>Your rentals</h2>
-              <p className="empty">
-                Paying as <b className="mono">{renterId}</b>
-              </p>
-            </div>
-          </div>
-          <a className="btn btn--quiet" href={hrefFor({ name: "marketplace" })}>
-            Browse machines
-          </a>
-        </header>
-
-        {loaded && jobs.length > 0 && (
-          <div className="stat-strip">
-            <div className="stat-strip__cell">
-              <span className="stat-strip__label">Total rentals</span>
-              <span className="stat-strip__value">{jobs.length}</span>
-            </div>
-            <div className="stat-strip__cell">
-              <span className="stat-strip__label">Machines used</span>
-              <span className="stat-strip__value">{machinesUsed}</span>
-            </div>
-            {newest && (
-              <div className="stat-strip__cell">
-                <span className="stat-strip__label">Most recent</span>
-                <span className="stat-strip__value">{timeAgo(newest.placedAt)}</span>
+        <div className="card panel dash-card">
+          <header className="dash">
+            <div className="section__title">
+              <SectionIcon path={ICON.user} />
+              <div>
+                <h2>Your rentals</h2>
+                <p className="empty">
+                  Paying as <b className="mono">{renterId}</b>
+                </p>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+            <a className="btn btn--quiet" href={hrefFor({ name: "marketplace" })}>
+              Browse machines
+            </a>
+          </header>
+
+          {loaded && jobs.length > 0 && (
+            <div className="stat-strip">
+              <div className="stat-strip__cell">
+                <span className="stat-strip__label">Total rentals</span>
+                <span className="stat-strip__value">{jobs.length}</span>
+              </div>
+              <div className="stat-strip__cell">
+                <span className="stat-strip__label">Machines used</span>
+                <span className="stat-strip__value">{machinesUsed}</span>
+              </div>
+              {newest && (
+                <div className="stat-strip__cell">
+                  <span className="stat-strip__label">Most recent</span>
+                  <span className="stat-strip__value">{timeAgo(newest.placedAt)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {newest ? (
           <LatestJob jobId={newest.jobId} />
