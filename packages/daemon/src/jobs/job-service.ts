@@ -101,7 +101,15 @@ export class JobService {
     jobId: string,
     blockIndex: number,
     paymentProof: unknown,
-  ): Promise<HttpResult<BlockReceipt | PaymentRequirement | ErrorBody | { error: string }>> {
+  ): Promise<
+    HttpResult<
+      | BlockReceipt
+      | PaymentRequirement
+      | (PaymentRequirement & { paymentError: string })
+      | ErrorBody
+      | { error: string }
+    >
+  > {
     const job = this.registry.get(jobId);
     if (!job) return { status: 404, body: { error: "job_not_found" } };
 
@@ -124,7 +132,11 @@ export class JobService {
     });
     if (!result.ok) {
       this.logger.warn({ jobId, blockIndex, error: result.error }, "payment verification failed");
-      return { status: 402, body: requirement };
+      // The 402 body stays a valid payment requirement — a stock x402 client
+      // must still be able to read it — but carries why the last attempt was
+      // refused. Without this a renter who has run out of money sees nothing
+      // but silence until the boundary kills the job.
+      return { status: 402, body: { ...requirement, paymentError: result.error } };
     }
 
     job.paidThrough = blockIndex;

@@ -284,7 +284,9 @@ export class Job {
         }
         if (challenge.status !== 402) throw new Error(`unexpected ${challenge.status}`);
 
-        const requirement = (await challenge.json()) as PaymentRequirement;
+        const requirement = (await challenge.json()) as PaymentRequirement & {
+          paymentError?: string;
+        };
         const proof = await this.opts.payer.pay({
           jobId: this.opts.jobId,
           blockIndex,
@@ -305,6 +307,17 @@ export class Job {
           return true;
         }
         if (res.status === 410) return false;
+        if (res.status === 402) {
+          // The provider refused the payment and said why. Surface it once
+          // per attempt rather than retrying in silence until the boundary.
+          const refused = (await res.json().catch(() => ({}))) as { paymentError?: string };
+          if (refused.paymentError) {
+            this.emit(
+              "error",
+              new Error(`block ${blockIndex} refused: ${refused.paymentError}`),
+            );
+          }
+        }
       } catch (err) {
         this.emit("error", err instanceof Error ? err : new Error(String(err)));
       }

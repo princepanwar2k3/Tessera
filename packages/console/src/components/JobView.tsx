@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { emptyMeterState, reduceMeter } from "../lib/meter-state.js";
 import { fetchArtifacts, subscribeToJob, type JobArtifacts } from "../lib/api.js";
+import { stopRenewing } from "../lib/renter.js";
 import { HCS_TOPIC_ID, topicUrl } from "../lib/explorer.js";
 import { Meter } from "./Meter.js";
 import { Ticker } from "./Ticker.js";
@@ -13,10 +14,19 @@ import { Ticker } from "./Ticker.js";
  * job ended `expired` (SPEC §5.5), and showing them is how that stops being
  * a claim in a document.
  */
-export function JobView({ jobId }: { jobId: string }) {
+export function JobView({
+  jobId,
+  renterUrl,
+}: {
+  jobId: string;
+  /** Present only when this job's renter agent is connected here. */
+  renterUrl?: string | undefined;
+}) {
   const [state, dispatch] = useReducer(reduceMeter, emptyMeterState);
   const [error, setError] = useState<string | undefined>();
   const [artifacts, setArtifacts] = useState<JobArtifacts | undefined>();
+  const [stopping, setStopping] = useState(false);
+  const [stopped, setStopped] = useState(false);
 
   useEffect(() => {
     setError(undefined);
@@ -66,6 +76,29 @@ export function JobView({ jobId }: { jobId: string }) {
             </a>
           )}
         </section>
+      )}
+
+      {renterUrl && !ended && (
+        <div className="killswitch">
+          <button
+            className="btn btn--stop"
+            disabled={stopping || stopped}
+            onClick={() => {
+              setStopping(true);
+              void stopRenewing(renterUrl, jobId)
+                .then(() => setStopped(true))
+                .catch((err: Error) => setError(err.message))
+                .finally(() => setStopping(false));
+            }}
+          >
+            {stopped ? "Not renewing" : stopping ? "Stopping…" : "Stop renewing"}
+          </button>
+          <span className="empty">
+            {stopped
+              ? "Nothing was sent to the provider. The job ends at the next boundary."
+              : "Stops buying blocks. The current block still runs to its end."}
+          </span>
+        </div>
       )}
 
       <Meter state={state} />

@@ -7,6 +7,9 @@ import { MachineList } from "./components/MachineList.js";
 import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
 import { DemoMeter } from "./components/DemoMeter.js";
+import { RenterPanel } from "./components/RenterPanel.js";
+import { RentForm } from "./components/RentForm.js";
+import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
 import { LatestJob } from "./components/LatestJob.js";
 
 export function App() {
@@ -14,6 +17,9 @@ export function App() {
   const [jobs, setJobs] = useState<Placement[]>([]);
   const [view, setView] = useRoute();
   const [offline, setOffline] = useState(false);
+  const [renterUrl, setRenterUrl] = useState(savedRenterUrl());
+  const [identity, setIdentity] = useState<RenterIdentity | undefined>();
+  const [rentingId, setRentingId] = useState<string | undefined>();
 
   const load = useCallback(async () => {
     try {
@@ -53,8 +59,17 @@ export function App() {
         </nav>
       </header>
 
+      <RenterPanel
+        baseUrl={renterUrl}
+        identity={identity}
+        onConnected={(url, who) => {
+          setRenterUrl(url);
+          setIdentity(who);
+        }}
+      />
+
       {view.name === "job" ? (
-        <JobView jobId={view.jobId} />
+        <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
       ) : (
         <>
           {/* The page leads with a payment stream rather than with copy. A
@@ -72,7 +87,24 @@ export function App() {
                   <code>node packages/control-plane/dist/index.js</code>.
                 </p>
               ) : (
-                <MachineList machines={machines} />
+                <MachineList
+                  machines={machines}
+                  canRent={identity !== undefined}
+                  rentingId={rentingId}
+                  onRent={(m) => setRentingId(m.machineId)}
+                  renderForm={(m) => (
+                    <RentForm
+                      machine={m}
+                      renterUrl={renterUrl}
+                      onCancel={() => setRentingId(undefined)}
+                      onRented={(job) => {
+                        setRentingId(undefined);
+                        void load();
+                        setView({ name: "job", jobId: job.jobId });
+                      }}
+                    />
+                  )}
+                />
               )}
             </section>
 

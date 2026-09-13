@@ -2,6 +2,11 @@ import type { MachineListing } from "../lib/types.js";
 
 interface Props {
   machines: MachineListing[];
+  /** Only offered once a renter agent is connected — nothing else can pay. */
+  canRent?: boolean;
+  rentingId?: string | undefined;
+  onRent?: (machine: MachineListing) => void;
+  renderForm?: (machine: MachineListing) => React.ReactNode;
 }
 
 /**
@@ -10,7 +15,7 @@ interface Props {
  * Block size sits beside price deliberately — it is half the cost of a job
  * (SPEC §4.2) and the thing this marketplace lets renters shop on.
  */
-export function MachineList({ machines }: Props) {
+export function MachineList({ machines, canRent, rentingId, onRent, renderForm }: Props) {
   if (machines.length === 0) {
     return <p className="empty">No machines online. Start a provider node to list one.</p>;
   }
@@ -42,6 +47,14 @@ export function MachineList({ machines }: Props) {
             <dt>Benchmark</dt>
             <dd>{Math.round(m.benchmark.score).toLocaleString()}</dd>
           </dl>
+
+          {rentingId === m.machineId
+            ? renderForm?.(m)
+            : canRent && (
+                <button className="btn" onClick={() => onRent?.(m)} disabled={!m.live}>
+                  Rent this machine
+                </button>
+              )}
 
         </article>
       ))}
