@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 export type Route =
-  | { name: "home" }
+  | { name: "marketplace" }
+  | { name: "ledger" }
+  | { name: "about" }
   | { name: "job"; jobId: string }
   | { name: "renter"; renterId: string };
 
@@ -19,12 +21,17 @@ export function parseHash(hash: string): Route {
   const renter = /^#\/renter\/([^/?#]+)$/.exec(hash);
   if (renter?.[1]) return { name: "renter", renterId: decodeURIComponent(renter[1]) };
 
-  return { name: "home" };
+  if (hash === "#/ledger") return { name: "ledger" };
+  if (hash === "#/about") return { name: "about" };
+
+  return { name: "marketplace" };
 }
 
 export function hrefFor(route: Route): string {
   if (route.name === "job") return `#/job/${encodeURIComponent(route.jobId)}`;
   if (route.name === "renter") return `#/renter/${encodeURIComponent(route.renterId)}`;
+  if (route.name === "ledger") return "#/ledger";
+  if (route.name === "about") return "#/about";
   return "#/";
 }
 

@@ -92,8 +92,8 @@ export function JobView({
   const serviceUrl = state.snapshot?.serviceUrl;
 
   return (
-    <div className="job-layout">
-      <div className="job-main">
+    <div className="page-layout">
+      <div className="page-main">
         {serviceUrl && (
           <section className={`card served${ended ? " served--gone" : ""}`}>
             <div>
@@ -148,7 +148,7 @@ export function JobView({
       </div>
 
       {asideOpen ? (
-        <aside className="job-aside rise" aria-label="Receipts and container output">
+        <aside className="page-aside job-aside rise" aria-label="Receipts and container output">
           <div className="job-aside__head">
             <h3>Details</h3>
             <button

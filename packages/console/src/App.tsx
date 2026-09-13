@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchJobs, fetchMachines, type Placement } from "./lib/api.js";
 import type { MachineListing } from "./lib/types.js";
 import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
-import { useActiveSection } from "./lib/useActiveSection.js";
 import { MachineList } from "./components/MachineList.js";
 import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
@@ -10,21 +9,27 @@ import { RenterDashboard } from "./components/RenterDashboard.js";
 import { Ledger } from "./components/Ledger.js";
 import { RenterPanel } from "./components/RenterPanel.js";
 import { RentForm } from "./components/RentForm.js";
+import { Modal } from "./components/Modal.js";
 import { Banner } from "./components/Banner.js";
 import { SectionIcon, ICON } from "./components/SectionIcon.js";
-import { hrefFor, useRoute } from "./lib/route.js";
+import { hrefFor, useRoute, type Route } from "./lib/route.js";
 import { assetLabel } from "./lib/format.js";
 
-const NAV = [
-  { id: "marketplace", label: "Marketplace" },
-  { id: "jobs", label: "Jobs" },
-  { id: "ledger", label: "Consensus log" },
-  { id: "about", label: "How it works" },
+const TOPNAV: { route: Route; label: string }[] = [
+  { route: { name: "marketplace" }, label: "Marketplace" },
+  { route: { name: "ledger" }, label: "Consensus log" },
+  { route: { name: "about" }, label: "About" },
 ];
 
-function BrandMark() {
+function BrandMark({ size = 26 }: { size?: number }) {
   return (
-    <svg className="brandmark" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+    <svg
+      className="brandmark"
+      width={size}
+      height={size}
+      viewBox="0 0 26 26"
+      aria-hidden="true"
+    >
       <rect x="1" y="1" width="10.5" height="10.5" rx="2.5" fill="#1a73e8" />
       <rect x="14.5" y="1" width="10.5" height="10.5" rx="2.5" fill="#1a73e8" opacity="0.5" />
       <rect x="1" y="14.5" width="10.5" height="10.5" rx="2.5" fill="#1a73e8" opacity="0.5" />
@@ -62,12 +67,6 @@ export function App() {
     return () => window.clearInterval(id);
   }, [load]);
 
-  const isHome = view.name === "home";
-  const active = useActiveSection(
-    NAV.map((n) => n.id),
-    isHome,
-  );
-
   const stats = {
     providers: new Set(machines.map((m) => m.providerId)).size,
     online: machines.filter((m) => m.live).length,
@@ -85,10 +84,23 @@ export function App() {
   return (
     <>
       <header className="topbar">
-        <a className="topbar__brand" href={hrefFor({ name: "home" })}>
+        <a className="topbar__brand" href={hrefFor({ name: "marketplace" })}>
           <BrandMark />
           <span className="topbar__name">Tessera</span>
         </a>
+
+        <nav className="topnav" aria-label="Main">
+          {TOPNAV.map(({ route, label }) => (
+            <a
+              key={label}
+              href={hrefFor(route)}
+              className={`topnav__link${view.name === route.name ? " topnav__link--active" : ""}`}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         <span className="topbar__spacer" />
         <div className="topbar__meta">
           <RenterPanel
@@ -102,86 +114,125 @@ export function App() {
         </div>
       </header>
 
-      {isHome && (
-        <nav className="tabnav" aria-label="Sections">
-          {NAV.map((n) => (
-            <a key={n.id} href={`#${n.id}`}>
-              {n.label}
-            </a>
-          ))}
-        </nav>
-      )}
-
-      <div className="layout">
-        {isHome && (
-          <nav className="sidenav" aria-label="Sections">
-            <div className="sidenav__group">
-              <p className="sidenav__label">On this page</p>
-              {NAV.map((n) => (
-                <a
-                  key={n.id}
-                  href={`#${n.id}`}
-                  className={`sidenav__link${active === n.id ? " sidenav__link--active" : ""}`}
-                >
-                  <span className="sidenav__dot" />
-                  {n.label}
-                </a>
-              ))}
-            </div>
-            <p className="sidenav__note">
-              Rent a machine by the block, pay before each one runs. Every settlement here is a
-              real transfer on Hedera testnet.
-            </p>
-          </nav>
-        )}
-
-        <main className={`content${isHome ? "" : " content--full"}`}>
-          <div
-            className="view"
-            key={
-              view.name === "job"
-                ? `job:${view.jobId}`
-                : view.name === "renter"
-                  ? `renter:${view.renterId}`
-                  : "home"
-            }
-          >
-            {view.name === "job" ? (
-              <>
-                <p className="breadcrumb">
-                  <a href={hrefFor({ name: "home" })}>Marketplace</a>
-                  <span>/</span>
-                  <span className="mono">{view.jobId}</span>
+      <main className="content">
+        <div
+          className="view"
+          key={
+            view.name === "job"
+              ? `job:${view.jobId}`
+              : view.name === "renter"
+                ? `renter:${view.renterId}`
+                : view.name
+          }
+        >
+          {view.name === "job" ? (
+            <>
+              <p className="breadcrumb">
+                <a href={hrefFor({ name: "marketplace" })}>Marketplace</a>
+                <span>/</span>
+                <span className="mono">{view.jobId}</span>
+              </p>
+              <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
+            </>
+          ) : view.name === "renter" ? (
+            <>
+              <p className="breadcrumb">
+                <a href={hrefFor({ name: "marketplace" })}>Marketplace</a>
+                <span>/</span>
+                <span className="mono">{view.renterId}</span>
+              </p>
+              <RenterDashboard renterId={view.renterId} />
+            </>
+          ) : view.name === "ledger" ? (
+            <Ledger />
+          ) : view.name === "about" ? (
+            <section className="section">
+              <div className="section__head">
+                <div className="section__title">
+                  <SectionIcon path={ICON.info} />
+                  <h2>About Tessera</h2>
+                </div>
+              </div>
+              <div className="prose">
+                <p>
+                  Tessera is a marketplace for renting compute by the block — fixed-length slices
+                  of time, each paid for before it runs. It exists to remove the trust problem in
+                  renting from someone you've never met: normally either the provider serves on
+                  credit and hopes to get paid, or the renter pays a deposit up front and hopes
+                  the provider delivers. The <b>Block Settlement Protocol</b> (BSP) removes both —
+                  service stops cleanly at the first unpaid boundary, and neither side ever
+                  extends credit.
                 </p>
-                <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
-              </>
-            ) : view.name === "renter" ? (
-              <>
-                <p className="breadcrumb">
-                  <a href={hrefFor({ name: "home" })}>Marketplace</a>
-                  <span>/</span>
-                  <span className="mono">{view.renterId}</span>
+                <p>
+                  Every payment here settles on Hedera testnet through the Blocky402 x402
+                  facilitator, in a custom HTS token, and every receipt is published to Hedera's
+                  consensus service — so a provider's billing history is something anyone can
+                  check, not just a number in this app's own database.
                 </p>
-                <RenterDashboard renterId={view.renterId} />
-              </>
-            ) : (
-              <>
-                <section className="section" id="marketplace">
-                  <div className="section__head">
-                    <div className="section__title">
-                      <SectionIcon path={ICON.market} />
-                      <h2>Marketplace</h2>
-                    </div>
-                    {identity ? (
-                      <span className="empty">Pick a machine and choose how many blocks to buy.</span>
-                    ) : (
-                      <span className="empty">Connect a renter agent to rent one.</span>
-                    )}
+
+                <h3>Pay for a block before it runs</h3>
+                <p>
+                  A container runs continuously, but payment arrives in lumps. Tessera divides
+                  time into fixed blocks, requires each one to be paid before it begins, and opens
+                  the window to buy the next while the current one is still running.
+                </p>
+                <ul className="invariants">
+                  <li>
+                    <b>No credit.</b> The provider never computes on an unpaid block.
+                  </li>
+                  <li>
+                    <b>Bounded loss.</b> The renter can lose at most one block.
+                  </li>
+                  <li>
+                    <b>Deterministic end.</b> Service stops at a boundary, never between.
+                  </li>
+                  <li>
+                    <b>No custody.</b> Payment goes renter to provider. Nothing is escrowed.
+                  </li>
+                </ul>
+              </div>
+            </section>
+          ) : (
+            <>
+              <div className="hero">
+                <div className="hero__copy">
+                  <span className="hero__eyebrow">Marketplace</span>
+                  <h1 className="hero__title">
+                    Rent a computer <span className="hero__accent">by the block, not the month.</span>
+                  </h1>
+                  <p className="hero__text">
+                    Every block is paid on <b>Hedera</b> before it runs — no credit extended,
+                    no deposit held, and the provider gets paid directly. Every receipt lands
+                    on a public consensus log anyone can audit.
+                  </p>
+                  <ul className="hero__points">
+                    <li>No credit</li>
+                    <li>No deposit</li>
+                    <li>Instant settlement</li>
+                  </ul>
+                  <a className="hero__cta" href={hrefFor({ name: "ledger" })}>
+                    See it settle on-chain
+                    <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+                <img
+                  className="hero__image"
+                  src="/tessera_compute_illustration.svg"
+                  alt="How a Tessera rental settles: the renter selects compute and pays per block before it runs; the provider is paid directly with no credit or risk; while the current block runs, the next block is already purchased (the lookahead window)."
+                />
+              </div>
+
+              <div className="page-layout">
+              <div className="page-main">
+                <section className="section">
+                  <div className="section__title">
+                    <SectionIcon path={ICON.market} />
+                    <h2>Available Machines</h2>
                   </div>
                   <p className="section__sub">
-                    Every listing is a provider offering spare capacity, priced per fixed-length
-                    block. Grouped by provider — the way a vendor directory is — because a machine
-                    is never an anonymous slot, it belongs to whoever is running it.
+                    {identity
+                      ? "Pick a machine and choose how many blocks to buy."
+                      : "Connect a renter agent to rent one."}
                   </p>
 
                   {offline ? (
@@ -190,119 +241,97 @@ export function App() {
                       this page will pick it up automatically.
                     </Banner>
                   ) : (
-                    <>
-                      {loaded && machines.length > 0 && (
-                        <div className="stat-strip">
-                          <div className="stat-strip__cell">
-                            <span className="stat-strip__label">Providers</span>
-                            <span className="stat-strip__value">{stats.providers}</span>
-                          </div>
-                          <div className="stat-strip__cell">
-                            <span className="stat-strip__label">Machines online</span>
-                            <span className="stat-strip__value">
-                              {stats.online}/{stats.total}
-                            </span>
-                          </div>
-                          <div className="stat-strip__cell">
-                            <span className="stat-strip__label">Cheapest block</span>
-                            <span className="stat-strip__value">{stats.cheapest ?? "—"}</span>
-                          </div>
-                          <div className="stat-strip__cell">
-                            <span className="stat-strip__label">Active jobs</span>
-                            <span className="stat-strip__value">{jobs.length}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      <MachineList
-                        machines={machines}
-                        loaded={loaded}
-                        canRent={identity !== undefined}
-                        rentingId={rentingId}
-                        onRent={(m) => setRentingId(m.machineId)}
-                        renderForm={(m) => (
-                          <RentForm
-                            machine={m}
-                            renterUrl={renterUrl}
-                            onCancel={() => setRentingId(undefined)}
-                            onRented={(job) => {
-                              setRentingId(undefined);
-                              void load();
-                              setView({ name: "job", jobId: job.jobId });
-                            }}
-                          />
-                        )}
-                      />
-                    </>
+                    <MachineList
+                      machines={machines}
+                      loaded={loaded}
+                      canRent={identity !== undefined}
+                      rentingId={rentingId}
+                      onRent={(m) => setRentingId(m.machineId)}
+                    />
                   )}
                 </section>
 
                 {loaded && !offline && (
-                  <section className="section" id="jobs">
+                  <section className="section">
                     <div className="section__head">
                       <div className="section__title">
                         <SectionIcon path={ICON.jobs} />
                         <h2>Jobs on this marketplace</h2>
                       </div>
                       {identity && (
-                        <a
-                          className="mono-link"
-                          href={hrefFor({ name: "renter", renterId: identity.accountId })}
-                        >
-                          yours only
+                        <a href={hrefFor({ name: "renter", renterId: identity.accountId })}>
+                          My rentals
                         </a>
                       )}
                     </div>
                     <p className="section__sub">
-                      Every placement the registry currently knows about. Renting happens from the
-                      SDK or a renter agent, never from this page — what shows up here already
-                      happened.
+                      Every placement the registry currently knows about. Renting happens from
+                      the SDK or a renter agent, never from this page — what shows up here
+                      already happened.
                     </p>
                     <div className="card panel">
                       <JobList jobs={jobs} />
                     </div>
                   </section>
                 )}
+              </div>
 
-                <section className="section" id="ledger">
-                  <Ledger />
-                </section>
+              {loaded && !offline && machines.length > 0 && (
+                <aside className="page-aside">
+                  <div className="stat-card">
+                    <p className="stat-card__title">Marketplace stats</p>
+                    <dl className="stat-card__grid">
+                      <div className="stat-card__tile">
+                        <dt className="stat-card__label">Providers</dt>
+                        <dd className="stat-card__value">{stats.providers}</dd>
+                      </div>
+                      <div className="stat-card__tile">
+                        <dt className="stat-card__label">Online</dt>
+                        <dd className="stat-card__value">
+                          <span
+                            className={`stat-card__dot${stats.online === stats.total ? " stat-card__dot--all" : ""}`}
+                            aria-hidden="true"
+                          />
+                          {stats.online}/{stats.total}
+                        </dd>
+                      </div>
+                      <div className="stat-card__tile">
+                        <dt className="stat-card__label">Cheapest block</dt>
+                        <dd className="stat-card__value">{stats.cheapest ?? "—"}</dd>
+                      </div>
+                      <div className="stat-card__tile">
+                        <dt className="stat-card__label">Active jobs</dt>
+                        <dd className="stat-card__value">{jobs.length}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </aside>
+              )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
 
-                <section className="section" id="about">
-                  <div className="section__head">
-                    <div className="section__title">
-                      <SectionIcon path={ICON.info} />
-                      <h2>Pay for a block before it runs</h2>
-                    </div>
-                  </div>
-                  <div className="prose">
-                    <p>
-                      A container runs continuously, but payment arrives in lumps. Serving on
-                      credit exposes the provider; a deposit exposes the renter. Tessera divides
-                      time into fixed blocks, requires each one to be paid before it begins, and
-                      opens the window to buy the next while the current one is still running.
-                    </p>
-                    <ul className="invariants">
-                      <li>
-                        <b>No credit.</b> The provider never computes on an unpaid block.
-                      </li>
-                      <li>
-                        <b>Bounded loss.</b> The renter can lose at most one block.
-                      </li>
-                      <li>
-                        <b>Deterministic end.</b> Service stops at a boundary, never between.
-                      </li>
-                      <li>
-                        <b>No custody.</b> Payment goes renter to provider. Nothing is escrowed.
-                      </li>
-                    </ul>
-                  </div>
-                </section>
-              </>
-            )}
-          </div>
-        </main>
-      </div>
+      {rentingId &&
+        (() => {
+          const machine = machines.find((m) => m.machineId === rentingId);
+          if (!machine) return null;
+          return (
+            <Modal title={`Rent ${machine.machineId}`} onClose={() => setRentingId(undefined)}>
+              <RentForm
+                machine={machine}
+                renterUrl={renterUrl}
+                onCancel={() => setRentingId(undefined)}
+                onRented={(job) => {
+                  setRentingId(undefined);
+                  void load();
+                  setView({ name: "job", jobId: job.jobId });
+                }}
+              />
+            </Modal>
+          );
+        })()}
     </>
   );
 }

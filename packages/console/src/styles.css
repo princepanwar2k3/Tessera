@@ -52,7 +52,11 @@
      own small saturated object, not a text-on-surface pairing, so it doesn't
      need to fade with dark mode the way a tint or a text color does. */
   --fill-success: #1e8e3e;
+  --fill-success-light: #34a853;
+  --fill-success-dark: #0d652d;
   --fill-warning: #f9ab00;
+  --fill-warning-light: #fbbc04;
+  --fill-warning-dark: #e37400;
   --fill-danger: #d93025;
 
   --ui: "Roboto", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -67,7 +71,7 @@
   --step-5: 2.75rem;
 
   --gap: 1.25rem;
-  --radius: 8px;
+  --radius: 16px;
   --radius-sm: 4px;
   --topbar-h: 3.5rem;
 
@@ -130,6 +134,7 @@ html {
 }
 
 body {
+  position: relative;
   margin: 0;
   background: var(--bg);
   color: var(--ink);
@@ -138,6 +143,29 @@ body {
   line-height: 1.55;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+}
+
+/* A soft ambient glow anchored behind the top of the page — restrained on its
+   own, but it's what gives the top bar's glass something worth blurring.
+   Fixed so it doesn't scroll away with the content sitting on top of it. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10% -10% auto -10%;
+  height: 34rem;
+  background: radial-gradient(
+    38% 60% at 28% 25%,
+    color-mix(in srgb, var(--accent) 30%, transparent),
+    transparent 70%
+  );
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
 }
 
 h1,
@@ -180,19 +208,29 @@ code {
   padding: 0.08em 0.34em;
 }
 
-/* ---------- app shell: top bar + left rail ---------- */
+/* ---------- app shell: top bar ---------- */
 
 .topbar {
   position: sticky;
   top: 0;
   z-index: 40;
-  height: var(--topbar-h);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  min-height: var(--topbar-h);
+  padding-block: 0.5rem;
   padding-inline: 1rem 1.25rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar {
+    background: var(--surface);
+  }
 }
 
 .topbar__brand {
@@ -219,6 +257,36 @@ code {
   letter-spacing: -0.01em;
 }
 
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.topnav__link {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  color: var(--slate);
+  font-size: var(--step-0);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.topnav__link:hover {
+  background: var(--surface-alt);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.topnav__link--active {
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+}
+
 .topbar__spacer {
   flex: 1 1 auto;
 }
@@ -230,96 +298,169 @@ code {
   flex: 0 0 auto;
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr);
-  align-items: start;
-  max-width: 84rem;
-  margin: 0 auto;
+.content {
+  padding: 1.75rem 2rem 6rem;
 }
 
-.sidenav {
-  position: sticky;
-  top: var(--topbar-h);
-  height: calc(100vh - var(--topbar-h));
-  overflow-y: auto;
-  padding: 1.25rem 0.9rem;
-  border-right: 1px solid var(--border);
+/* ---------- marketplace hero ---------- */
+
+/* What this whole page is for, shown once before the listings — text on the
+   left states it in words, the diagram on the right carries its own labels. */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 1.5rem;
+  height: 440px;
+  margin-bottom: 1.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface) 55%, transparent),
+    color-mix(in srgb, var(--accent-tint) 45%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
-.sidenav__group {
-  margin-bottom: 1.4rem;
+.hero__copy {
+  flex: 1.6 1 400px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.1rem;
+  padding: 2rem 1.5rem 2rem 2.5rem;
 }
 
-.sidenav__label {
-  padding: 0 0.7rem;
-  margin: 0 0 0.35rem;
+.hero__eyebrow {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-strong);
   font-size: var(--step-00);
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--faint);
   text-transform: uppercase;
 }
 
-.sidenav__link {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 999px;
-  color: var(--slate);
-  font-size: var(--step-0);
-  font-weight: 500;
-}
-
-.sidenav__link:hover {
-  background: var(--surface-alt);
+.hero__title {
+  margin: 0;
   color: var(--ink);
-  text-decoration: none;
+  font-size: var(--step-5);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
-.sidenav__link--active {
+.hero__accent {
+  background: linear-gradient(90deg, var(--success), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero__text {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--slate);
+  font-size: var(--step-1);
+  line-height: 1.55;
+}
+
+.hero__text b {
+  color: var(--ink);
+}
+
+.hero__points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero__points li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
   background: var(--accent-tint);
-  color: var(--accent-strong);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: var(--step-00);
+  font-weight: 600;
 }
 
-.sidenav__dot {
+.hero__points li::before {
+  content: "";
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
-  background: currentColor;
-  opacity: 0.55;
-  flex: 0 0 auto;
+  background: var(--success);
 }
 
-.sidenav__link--active .sidenav__dot {
-  opacity: 1;
+.hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  color: var(--on-accent);
+  font-size: var(--step-1);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
-.sidenav__note {
-  margin: 0.9rem 0.7rem 0;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border);
-  color: var(--faint);
-  font-size: var(--step-00);
-  line-height: 1.5;
+.hero__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-.tabnav {
-  display: none;
+.hero__cta span {
+  transition: transform 120ms ease;
 }
 
-.content {
+.hero__cta:hover span {
+  transform: translateX(3px);
+}
+
+.hero__image {
+  display: block;
+  flex: 1 1 480px;
   min-width: 0;
-  padding: 1.75rem 1.75rem 6rem;
-  /* Assumes the sidenav's column exists. Views that render no sidenav (a
-     job, a renter dashboard) add --full so this spans both tracks instead
-     of auto-placing into the first, narrow one. */
-  grid-column: 2 / 3;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
 }
 
-.content--full {
-  grid-column: 1 / -1;
+@media (max-width: 720px) {
+  .hero {
+    height: auto;
+    flex-direction: column;
+  }
+
+  .hero__copy {
+    padding: 1.75rem 1.5rem 0;
+  }
+
+  .hero__image {
+    flex-basis: auto;
+    height: 220px;
+  }
 }
 
 @keyframes fade {
@@ -418,7 +559,13 @@ code {
 /* ---------- cards & panels ---------- */
 
 .card {
-  background: var(--surface);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface) 55%, transparent),
+    color-mix(in srgb, var(--accent-tint) 45%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-1);
@@ -476,17 +623,17 @@ code {
 .stat-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  gap: 0.75rem;
   margin-bottom: 1.4rem;
 }
 
 .stat-strip__cell {
   padding: 0.8rem 1rem 0.85rem;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -508,6 +655,85 @@ code {
   font-size: var(--step-3);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* A stat summary docked in a page's right rail instead of a strip above the
+   content — the same readings, laid out as a small instrument panel of its
+   own rather than a row of tiles competing with the page's main column.
+   Same frosted-glass language as the hero and the machine cards, so the
+   rail reads as part of the same surface, not a different widget kit. */
+.stat-card {
+  padding: 1.4rem 1.4rem 1.5rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface) 55%, transparent),
+    color-mix(in srgb, var(--accent-tint) 45%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-1);
+}
+
+.stat-card__title {
+  font-size: var(--step-00);
+  font-weight: 600;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 1rem;
+}
+
+.stat-card__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.stat-card__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.stat-card__label {
+  margin: 0;
+  font-size: var(--step-00);
+  color: var(--faint);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.stat-card__value {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: var(--step-2);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card__dot {
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--warning);
+}
+
+.stat-card__dot--all {
+  background: var(--success);
 }
 
 /* ---------- buttons ---------- */
@@ -827,175 +1053,183 @@ input:focus-visible {
   }
 }
 
-/* ---------- marketplace: organizations ---------- */
+/* ---------- marketplace: available machines ---------- */
 
-/* Grouped the way a vendor directory groups listings: one card per provider
-   (the org), that provider's machines listed underneath like seats in its
-   own chart and connected to it by a branch line, rather than repeated as
-   identical anonymous cards. */
-.orgs {
+/* Every machine as its own card in one grid — a resource list of individual
+   instances, not a table row, because a row reads as a record and a card
+   reads as a thing you can act on. */
+.machines-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1.35rem;
+}
+
+.machine-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-}
-
-.org {
+  padding: 1.5rem 1.5rem 1.6rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface) 55%, transparent),
+    color-mix(in srgb, var(--accent-tint) 45%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border-radius: 22px;
   box-shadow: var(--shadow-1);
-  overflow: hidden;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
-.org__head {
+.machine-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-3px);
+}
+
+.machine-card--renting {
+  border-color: var(--accent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-tint) 70%, transparent),
+    color-mix(in srgb, var(--surface) 40%, transparent)
+  );
+  transform: none;
+}
+
+.machine-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.machine-card__who {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.95rem 1.15rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-alt);
+  gap: 0.6rem;
+  min-width: 0;
 }
 
-.org__avatar {
+.machine-card__avatar {
   flex: 0 0 auto;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--ui);
-  font-weight: 600;
-  font-size: var(--step-1);
-  letter-spacing: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #fff;
+  box-shadow: var(--shadow-1);
 }
 
-.org__avatar--offline {
-  background: var(--faint) !important;
-  opacity: 0.55;
-}
-
-.org__id {
-  flex: 1 1 auto;
+.machine-card__names {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  gap: 0.05rem;
 }
 
-.org__name {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  font-size: var(--step-2);
-  font-weight: 500;
+.machine-card__id {
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-.org__tag {
-  font-family: var(--mono);
-  font-size: var(--step-00);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+.machine-card__provider {
   color: var(--faint);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.12rem 0.55rem;
+  font-size: var(--step-00);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.org__meta {
-  margin: 0.25rem 0 0;
-  color: var(--slate);
-  font-size: var(--step-0);
+.machine-card__price {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.9rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
-.org__meta b {
+.machine-card__price-amount {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: var(--step-2);
   color: var(--ink);
+}
+
+.machine-card__price-amount span {
+  font-size: var(--step-0);
   font-weight: 600;
+  color: var(--slate);
 }
 
-.org-row {
+.machine-card__price-unit {
+  font-size: var(--step-00);
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.machine-card__specs {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 0.7fr 1fr auto;
-  align-items: center;
-  gap: 0.6rem 1rem;
-  padding: 0.8rem 1.15rem;
-  border-bottom: 1px solid var(--hair);
-  position: relative;
-  transition: background-color 120ms ease;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0;
 }
 
-.org-row:last-child {
-  border-bottom: 0;
-}
-
-.org-row:hover {
-  background: var(--surface-alt);
-}
-
-/* The branch: a stub off the org's spine into each machine row, the way an
-   org chart draws reports under a manager. */
-.org-row::before {
-  content: "";
-  position: absolute;
-  left: 1.8rem;
-  top: 0;
-  bottom: 50%;
-  width: 1px;
-  background: var(--border);
-}
-
-.org-row::after {
-  content: "";
-  position: absolute;
-  left: 1.8rem;
-  top: 50%;
-  width: 0.65rem;
-  height: 1px;
-  background: var(--border);
-}
-
-.org-row:first-child::before {
-  top: 50%;
-}
-
-.org-row--renting {
-  background: var(--accent-tint);
-}
-
-.org-row__id {
-  padding-left: 2.5rem;
-  font-weight: 500;
+.machine-card__stat {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  padding: 0.5rem 0.2rem;
+  border-radius: 14px;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.org-row__col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.org-row__label {
+.machine-card__stat dt {
   font-size: var(--step-00);
   color: var(--faint);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-.org-row__value {
+.machine-card__stat dd {
+  margin: 0;
   font-family: var(--mono);
   font-size: var(--step-0);
+  font-weight: 600;
   color: var(--ink);
 }
 
-.org-row__form {
-  grid-column: 1 / -1;
-  padding-left: 2.5rem;
-  padding-top: 0.3rem;
+.machine-card .btn {
+  align-self: stretch;
+  text-align: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-1);
+}
+
+.machine-card .btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-2);
 }
 
 /* ---------- the meter ---------- */
@@ -1499,6 +1733,80 @@ table.ledger .mono {
   gap: 0.5rem;
 }
 
+/* ---------- modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, black 45%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fade 150ms ease both;
+}
+
+.modal {
+  width: 100%;
+  max-width: 32rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface) 92%, transparent),
+    color-mix(in srgb, var(--accent-tint) 55%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-2);
+  padding: 2rem 2.1rem 2.2rem;
+  animation: rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.modal__head h2 {
+  margin: 0;
+  font-size: var(--step-2);
+  font-weight: 600;
+}
+
+.modal__close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  color: var(--slate);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal__close:hover {
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+
+.modal .rent {
+  padding-top: 0;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -1569,20 +1877,19 @@ table.ledger .mono {
   border-bottom: 0;
 }
 
-/* ---------- job detail: main + collapsible details rail ---------- */
+/* ---------- page layout: main + right rail ---------- */
 
-/* The meter is the reason you opened this page; the receipts ticker and the
-   container's own output are supporting evidence for it, not co-equal
-   content — so they live in a rail you can put away, not another card in
-   the same scroll. */
-.job-layout {
+/* A page's primary content earns the wide column; supporting material — a
+   stats summary, a job's receipts and output — lives in a narrower rail
+   beside it rather than another full-width card in the same scroll. */
+.page-layout {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 1.5rem;
 }
 
-.job-main {
+.page-main {
   flex: 1 1 26rem;
   min-width: 0;
   display: flex;
@@ -1590,9 +1897,9 @@ table.ledger .mono {
   gap: var(--gap);
 }
 
-.job-aside {
-  flex: 0 0 22rem;
-  max-width: 22rem;
+.page-aside {
+  flex: 0 0 20rem;
+  max-width: 20rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -1600,6 +1907,16 @@ table.ledger .mono {
   top: calc(var(--topbar-h) + 1rem);
 }
 
+@media (max-width: 60rem) {
+  .page-aside {
+    flex-basis: 100%;
+    max-width: 100%;
+    position: static;
+  }
+}
+
+/* The job page's rail can additionally be put away — the receipts ticker and
+   container output are supporting evidence, not content you always need. */
 .job-aside__head {
   display: flex;
   align-items: center;
@@ -1644,11 +1961,6 @@ table.ledger .mono {
 }
 
 @media (max-width: 60rem) {
-  .job-aside {
-    flex-basis: 100%;
-    max-width: 100%;
-    position: static;
-  }
   .job-aside__reopen {
     position: static;
   }
@@ -1661,7 +1973,7 @@ table.ledger .mono {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 2px;
+  gap: 0.5rem;
   max-height: 17rem;
   overflow-y: auto;
 }
@@ -1673,16 +1985,19 @@ table.ledger .mono {
   align-items: baseline;
   justify-content: space-between;
   gap: 0.35rem 1rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.85rem;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   text-align: left;
   color: inherit;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .job:hover {
-  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-color: var(--border);
   text-decoration: none;
 }
@@ -1855,43 +2170,6 @@ table.ledger .mono {
   line-height: 1.55;
   margin: 0 0 1rem;
   color: var(--slate);
-}
-
-@media (max-width: 62rem) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sidenav {
-    display: none;
-  }
-  .content {
-    grid-column: 1 / -1;
-  }
-  .tabnav {
-    display: flex;
-    gap: 0.4rem;
-    padding: 0.6rem 1rem;
-    overflow-x: auto;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: var(--topbar-h);
-    z-index: 30;
-  }
-  .tabnav a {
-    flex: 0 0 auto;
-    font-size: var(--step-00);
-    font-weight: 500;
-    color: var(--slate);
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 0.35rem 0.8rem;
-  }
-  .tabnav a:hover {
-    text-decoration: none;
-    color: var(--ink);
-  }
 }
 
 @media (max-width: 40rem) {

@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="720" viewBox="900 0 1000 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020b18"/>
+      <stop offset="1" stop-color="#06162d"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22f5d0"/>
+      <stop offset="1" stop-color="#168cff"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1678ff"/>
+      <stop offset="1" stop-color="#694cff"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="24"/></filter>
+  </defs>
+  <g opacity=".16" stroke="#238cff" stroke-width="1">
+    <path d="M930 570H1880M1020 620H1880"/>
+    <path d="M1100 180L1540 620M1260 120L1700 560M1430 100L1830 500"/>
+  </g>
+
+  <!-- Renter card -->
+  <g transform="translate(970 95)">
+    <rect width="270" height="105" rx="16" fill="#071b35" stroke="#218cff" stroke-width="2"/>
+    <circle cx="35" cy="35" r="18" fill="#1678ff"/>
+    <circle cx="35" cy="29" r="6" fill="white"/>
+    <path d="M24 46c3-10 19-10 22 0" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <text x="65" y="39" fill="white" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="700">Renter</text>
+    <text x="65" y="64" fill="#b8c9df" font-family="Inter,Arial,sans-serif" font-size="13">Selects compute</text>
+    <text x="65" y="83" fill="#b8c9df" font-family="Inter,Arial,sans-serif" font-size="13">and pays per block</text>
+  </g>
+
+  <!-- Provider card -->
+  <g transform="translate(1640 90)">
+    <rect width="230" height="105" rx="16" fill="#071b35" stroke="#1edfc5" stroke-width="2"/>
+    <circle cx="35" cy="35" r="18" fill="#11bda8"/>
+    <circle cx="35" cy="29" r="6" fill="white"/>
+    <path d="M24 46c3-10 19-10 22 0" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <text x="65" y="39" fill="white" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="700">Provider</text>
+    <text x="65" y="64" fill="#b8c9df" font-family="Inter,Arial,sans-serif" font-size="13">Paid directly —</text>
+    <text x="65" y="83" fill="#b8c9df" font-family="Inter,Arial,sans-serif" font-size="13">no credit, no risk</text>
+  </g>
+
+  <!-- server racks -->
+  <g transform="translate(1270 75)" filter="url(#glow)">
+    <g fill="#071a31" stroke="#1678ff" stroke-width="2">
+      <rect x="0" y="45" width="110" height="245" rx="10"/>
+      <rect x="92" y="0" width="135" height="290" rx="10"/>
+      <rect x="205" y="35" width="105" height="255" rx="10"/>
+    </g>
+    <g fill="#168cff">
+      <rect x="22" y="75" width="55" height="6" rx="3"/><rect x="22" y="105" width="75" height="6" rx="3"/>
+      <rect x="22" y="135" width="55" height="6" rx="3"/><rect x="22" y="165" width="75" height="6" rx="3"/>
+      <rect x="22" y="195" width="55" height="6" rx="3"/><rect x="22" y="225" width="75" height="6" rx="3"/>
+      <rect x="118" y="35" width="75" height="7" rx="3"/><rect x="118" y="70" width="90" height="7" rx="3"/>
+      <rect x="118" y="105" width="70" height="7" rx="3"/><rect x="118" y="140" width="90" height="7" rx="3"/>
+      <rect x="118" y="175" width="70" height="7" rx="3"/><rect x="118" y="210" width="90" height="7" rx="3"/>
+      <rect x="225" y="70" width="55" height="6" rx="3"/><rect x="225" y="105" width="65" height="6" rx="3"/>
+      <rect x="225" y="140" width="55" height="6" rx="3"/><rect x="225" y="175" width="65" height="6" rx="3"/>
+      <rect x="225" y="210" width="55" height="6" rx="3"/>
+    </g>
+  </g>
+
+  <!-- laptop -->
+  <g transform="translate(1360 190)" filter="url(#glow)">
+    <path d="M0 25Q0 0 25 0h270q25 0 25 25v145H0Z" fill="#061326" stroke="#2499ff" stroke-width="3"/>
+    <rect x="22" y="22" width="251" height="115" rx="7" fill="#020a16" stroke="#176fff"/>
+    <g stroke="#20e0cf" stroke-width="3" opacity=".9">
+      <path d="M42 50h105M42 65h145M42 80h85M42 95h125"/>
+    </g>
+    <path d="M-35 170h365l-35 27H0z" fill="#0a2442" stroke="#218cff" stroke-width="2"/>
+    <!-- compute container -->
+    <path d="M170 45l55-28 55 28v58l-55 30-55-30z" fill="url(#blue)" opacity=".65" stroke="#49dfff" stroke-width="2"/>
+    <path d="M170 45l55 30 55-30M225 75v58" fill="none" stroke="#65eaff" stroke-width="2"/>
+  </g>
+
+  <!-- payment connector -->
+  <g fill="none" stroke="url(#cyan)" stroke-width="3">
+    <path d="M1100 200v75h185"/>
+    <path d="M1640 195v40h-80"/>
+  </g>
+  <g transform="translate(1170 260)">
+    <circle cx="0" cy="0" r="27" fill="#0ccbb8" stroke="#73fff0" stroke-width="2"/>
+    <text x="-9" y="9" fill="white" font-size="27" font-family="Arial" font-weight="700">$</text>
+    <text x="45" y="-2" fill="white" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700">Payment</text>
+    <text x="45" y="18" fill="#9fb4cf" font-family="Inter,Arial,sans-serif" font-size="12">(before execution)</text>
+  </g>
+
+  <!-- lookahead card -->
+  <g transform="translate(1650 235)">
+    <rect width="220" height="86" rx="14" fill="#071b35" stroke="#168cff" stroke-width="2"/>
+    <text x="18" y="28" fill="#c8d7ea" font-family="Inter,Arial,sans-serif" font-size="12">While block N runs,</text>
+    <text x="18" y="47" fill="#c8d7ea" font-family="Inter,Arial,sans-serif" font-size="12">the next block is already</text>
+    <text x="18" y="67" fill="white" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700">purchased (lookahead).</text>
+  </g>
+
+  <!-- block timeline -->
+  <g transform="translate(1060 430)">
+    <path d="M0 55H760" stroke="#208cff" stroke-width="2" opacity=".6"/>
+    <g font-family="Inter,Arial,sans-serif" text-anchor="middle">
+      <g transform="translate(70)">
+        <rect x="-42" y="10" width="84" height="84" rx="16" fill="#0bcdb8" opacity=".25" stroke="#24ffe5" stroke-width="2"/>
+        <circle cx="0" cy="52" r="17" fill="#0bd8c2"/><path d="M-8 52l6 7 12-15" fill="none" stroke="white" stroke-width="3"/>
+        <text y="120" fill="white" font-size="14" font-weight="700">Block 1</text><text y="139" fill="#8fa8c4" font-size="12">(15s)</text>
+      </g>
+      <g transform="translate(260)">
+        <rect x="-42" y="10" width="84" height="84" rx="16" fill="#0bcdb8" opacity=".25" stroke="#24ffe5" stroke-width="2"/>
+        <circle cx="0" cy="52" r="17" fill="#0bd8c2"/><path d="M-8 52l6 7 12-15" fill="none" stroke="white" stroke-width="3"/>
+        <text y="120" fill="white" font-size="14" font-weight="700">Block 2</text><text y="139" fill="#8fa8c4" font-size="12">(15s)</text>
+      </g>
+      <g transform="translate(450)">
+        <rect x="-42" y="10" width="84" height="84" rx="16" fill="#1678ff" opacity=".4" stroke="#4ab0ff" stroke-width="2"/>
+        <circle cx="0" cy="52" r="17" fill="#208cff"/><circle cx="0" cy="52" r="8" fill="none" stroke="white" stroke-width="2"/>
+        <text y="120" fill="white" font-size="14" font-weight="700">Block 3</text><text y="139" fill="#8fa8c4" font-size="12">(15s)</text>
+      </g>
+      <g transform="translate(640)">
+        <rect x="-42" y="10" width="84" height="84" rx="16" fill="#0a2344" stroke="#2867b7" stroke-width="2"/>
+        <circle cx="0" cy="52" r="17" fill="#102d50" stroke="#5994d5" stroke-width="2"/>
+        <path d="M0 42v11l8 5" fill="none" stroke="#8db6e8" stroke-width="2"/>
+        <text y="120" fill="#d5e0ee" font-size="14" font-weight="700">Block 4</text><text y="139" fill="#8fa8c4" font-size="12">(15s)</text>
+      </g>
+    </g>
+    <g stroke="#21e1ce" stroke-width="3" fill="none">
+      <path d="M120 52h95"/><path d="M310 52h95"/>
+    </g>
+    <g stroke="#358cff" stroke-width="3" fill="none">
+      <path d="M500 52h95"/>
+    </g>
+  </g>
+</svg>

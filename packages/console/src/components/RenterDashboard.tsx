@@ -60,7 +60,7 @@ export function RenterDashboard({ renterId }: { renterId: string }) {
               </p>
             </div>
           </div>
-          <a className="btn btn--quiet" href={hrefFor({ name: "home" })}>
+          <a className="btn btn--quiet" href={hrefFor({ name: "marketplace" })}>
             Browse machines
           </a>
         </header>
