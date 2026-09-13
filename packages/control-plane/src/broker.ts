@@ -7,6 +7,8 @@ export interface PlaceJobInput {
   image: string;
   cmd?: string[] | undefined;
   env?: Record<string, string> | undefined;
+  /** Container port to publish, for workloads that serve something. */
+  exposedPort?: number | undefined;
 }
 
 export interface Placement {
@@ -119,6 +121,7 @@ export class Broker {
       image: input.image,
       cmd: input.cmd,
       env: input.env,
+      exposedPort: input.exposedPort,
       blockSeconds: machine.params.blockSeconds,
       leadSeconds: machine.params.leadSeconds,
       pricePerBlock: machine.params.pricePerBlock,

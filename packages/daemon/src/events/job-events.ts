@@ -23,6 +23,8 @@ export interface JobSnapshot {
   asset: string;
   clockStartedAt?: string | undefined;
   boundaryAt?: string | undefined;
+  /** Live only while the job is paid for. Gone when the watchdog stops it. */
+  serviceUrl?: string | undefined;
 }
 
 export type JobEvent =
@@ -146,5 +148,6 @@ export function snapshotOf(job: Job): JobSnapshot {
     asset: job.asset,
     clockStartedAt: job.startedAt ? new Date(job.startedAt).toISOString() : undefined,
     boundaryAt: job.boundaryAt ? new Date(job.boundaryAt).toISOString() : undefined,
+    serviceUrl: job.serviceUrl,
   };
 }

@@ -83,6 +83,7 @@ export async function startTestDaemon(opts: TestDaemonOptions): Promise<TestDaem
       network: "hedera-testnet",
       payTo: "0.0.PROVIDER",
       facilitatorUrl: "https://facilitator.test",
+      publicHost: "127.0.0.1",
     },
     logger,
     new JobStore(opts.dataDir),

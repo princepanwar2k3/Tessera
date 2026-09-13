@@ -44,9 +44,30 @@ export function JobView({ jobId }: { jobId: string }) {
   }, [ended, jobId]);
 
   const logs = artifacts?.artifacts?.stdout?.trimEnd();
+  const serviceUrl = state.snapshot?.serviceUrl;
 
   return (
     <>
+      {serviceUrl && (
+        <section className={`card served${ended ? " served--gone" : ""}`}>
+          <div>
+            <h2>{ended ? "This site is gone" : "This site is live"}</h2>
+            <p>
+              {ended
+                ? "The renter stopped paying, so the provider stopped serving it at the block boundary."
+                : "Served by the rented container, for as long as the next block is paid for."}
+            </p>
+          </div>
+          {ended ? (
+            <span className="served__url served__url--dead">{serviceUrl}</span>
+          ) : (
+            <a className="served__url" href={serviceUrl} target="_blank" rel="noreferrer">
+              {serviceUrl}
+            </a>
+          )}
+        </section>
+      )}
+
       <Meter state={state} />
       {error && <p className="error">{error}</p>}
       <Ticker lines={state.ticker} asset={state.snapshot?.asset} />

@@ -7,11 +7,18 @@ export interface ContainerSpec {
   env?: Record<string, string> | undefined;
   caps: ResourceCaps;
   artifactHostDir: string;
+  /**
+   * Port inside the container to publish, for workloads that serve something.
+   * Omit for batch work, which needs no inbound route.
+   */
+  exposedPort?: number | undefined;
 }
 
 export interface StartedContainer {
   containerId: string;
   readyAt: number;
+  /** Host port the container's `exposedPort` was published on, if any. */
+  hostPort?: number | undefined;
 }
 
 /**

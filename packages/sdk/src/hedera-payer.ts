@@ -29,6 +29,13 @@ export interface HederaPayerOptions {
    * real money.
    */
   maxAmountPerPayment?: string;
+  /**
+   * Assets this payer may spend, as they appear on the v2 wire: `0.0.0` for
+   * HBAR, or an HTS token id. Defaults to HBAR only. Anything not listed is
+   * refused before a signature is produced, which is the point — a renter
+   * paying in one token should not be signable into another.
+   */
+  allowedAssets?: string[];
 }
 
 export class HederaPayer implements Payer {
@@ -60,19 +67,20 @@ export class HederaPayer implements Payer {
       { network: this.network },
     );
 
-    const asset = {
+    const allowed = this.opts.allowedAssets ?? ["0.0.0"];
+    const assets = allowed.map((asset) => ({
       network: this.network,
-      asset: "0.0.0",
+      asset,
       ...(this.opts.maxAmountPerPayment !== undefined
         ? { maxAmountPerPayment: this.opts.maxAmountPerPayment }
         : {}),
-    };
+    }));
 
     // NOTE: the x402Client constructor takes a requirements *selector*, not a
     // config object — a spendControls config passed there is silently ignored
     // and fails identically to not configuring anything.
     const client = new x402Client()
-      .setSpendControls({ allowedAssets: [asset] })
+      .setSpendControls({ allowedAssets: assets })
       .register(this.network, new hederaClient.ExactHederaScheme(signer));
 
     this.client = client;

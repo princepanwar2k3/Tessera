@@ -98,6 +98,15 @@ export class Job {
     return this.snapshot;
   }
 
+  /**
+   * Where the workload is reachable, while the job is paid for. Undefined for
+   * batch work, and for a job that has stopped — the whole point being that
+   * it goes away at the boundary.
+   */
+  get serviceUrl(): string | undefined {
+    return this.finished ? undefined : this.snapshot?.serviceUrl;
+  }
+
   get totalSpent(): string {
     return this.spent;
   }

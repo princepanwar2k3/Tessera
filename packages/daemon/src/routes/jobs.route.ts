@@ -7,6 +7,7 @@ const CreateJobBody = z.object({
   image: z.string(),
   cmd: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
+  exposedPort: z.number().int().min(1).max(65535).optional(),
   blockSeconds: z.number().int().positive(),
   leadSeconds: z.number().int().positive(),
   pricePerBlock: z.string(),

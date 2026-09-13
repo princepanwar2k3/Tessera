@@ -30,6 +30,8 @@ const ConfigSchema = z.object({
   providerId: z.string().default("node-a"),
   /** Base URL renters reach this daemon on — what the listing advertises. */
   publicUrl: z.string().url().optional(),
+  /** Host renters reach published workloads on (the rented site's hostname). */
+  publicHost: z.string().default("127.0.0.1"),
   /** Advertised price per block, smallest unit, decimal string (SPEC §4). */
   pricePerBlock: z.string().default("1500"),
   /** Settlement asset: a token id ("0.0.XXXXXX") or "HBAR". */
@@ -92,6 +94,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     defaultLeadSeconds: env.DEFAULT_LEAD_SECONDS,
     providerId: env.PROVIDER_ID,
     publicUrl: env.PUBLIC_URL || undefined,
+    publicHost: env.PUBLIC_HOST,
     pricePerBlock: env.PRICE_PER_BLOCK,
     asset: env.ASSET,
     providerUaid: env.PROVIDER_UAID,

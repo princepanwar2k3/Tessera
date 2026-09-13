@@ -27,7 +27,7 @@ export class FakeDockerRunner implements DockerRunner {
    */
   constructor(private readonly clock: Clock = { now: () => Date.now(), setInterval: () => 0, clearInterval: () => {} }) {}
 
-  async createAndStart(_spec: ContainerSpec): Promise<StartedContainer> {
+  async createAndStart(spec: ContainerSpec): Promise<StartedContainer> {
     const containerId = `fake-${++this.counter}`;
     this.containers.set(containerId, {
       containerId,
@@ -36,7 +36,12 @@ export class FakeDockerRunner implements DockerRunner {
       killSignalsReceived: [],
     });
     this.nextContainerIgnoresSigterm = false;
-    return { containerId, readyAt: this.clock.now() };
+    return {
+      containerId,
+      readyAt: this.clock.now(),
+      // Deterministic stand-in for the port docker would assign.
+      ...(spec.exposedPort !== undefined ? { hostPort: 40000 + this.counter } : {}),
+    };
   }
 
   async kill(containerId: string, signal: "SIGTERM" | "SIGKILL"): Promise<void> {

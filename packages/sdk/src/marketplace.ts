@@ -22,6 +22,11 @@ export interface RentOptions {
   image: string;
   cmd?: string[];
   env?: Record<string, string>;
+  /**
+   * Container port to publish. Give this for a workload that serves
+   * something, and the job reports the URL it is reachable on while paid.
+   */
+  exposedPort?: number;
   budget: string;
   maxBlocks?: number;
   /** Poll interval for the renewal timer fallback. */
@@ -103,6 +108,7 @@ export class Marketplace {
         image: options.image,
         cmd: options.cmd,
         env: options.env,
+        exposedPort: options.exposedPort,
       }),
     });
 

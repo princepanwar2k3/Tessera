@@ -28,6 +28,8 @@ export interface CreateJobInput {
   image: string;
   cmd?: string[] | undefined;
   env?: Record<string, string> | undefined;
+  /** Container port to publish, for workloads that serve something. */
+  exposedPort?: number | undefined;
   blockSeconds: number;
   leadSeconds: number;
   pricePerBlock: string;
@@ -43,6 +45,8 @@ export interface JobServiceConfig {
   network: string;
   payTo: string;
   facilitatorUrl: string;
+  /** Host renters reach published workloads on. */
+  publicHost?: string | undefined;
 }
 
 export type HttpResult<T> = { status: number; body: T };
@@ -76,6 +80,7 @@ export class JobService {
       image: input.image,
       cmd: input.cmd,
       env: input.env,
+      exposedPort: input.exposedPort,
       blockSeconds: input.blockSeconds,
       leadSeconds: input.leadSeconds,
       pricePerBlock: input.pricePerBlock,
@@ -246,11 +251,15 @@ export class JobService {
       image: job.image,
       cmd: job.cmd,
       env: job.env,
+      exposedPort: job.exposedPort,
       caps: { ...DEFAULT_RESOURCE_CAPS, ...this.config.resourceCaps },
       artifactHostDir,
     });
 
     job.containerId = started.containerId;
+    if (started.hostPort !== undefined) {
+      job.serviceUrl = `http://${this.config.publicHost ?? "127.0.0.1"}:${started.hostPort}`;
+    }
     // SPEC.md §5.2: the clock starts when the service is ready, not at payment.
     job.startedAt = started.readyAt;
     job.blockIndex = 1;

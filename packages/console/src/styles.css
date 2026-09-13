@@ -533,6 +533,59 @@ button {
   color: var(--slate);
 }
 
+/* ---------- the served site ---------- */
+
+/* The one place on the page that says what the money actually bought. Green
+   while it is being paid for, red once it is not. */
+.served {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border-left: 3px solid var(--settled);
+}
+
+.served h2 {
+  font-size: var(--step-1);
+  margin: 0 0 0.15rem;
+}
+
+.served p {
+  margin: 0;
+  color: var(--slate);
+  font-size: var(--step-0);
+  max-width: 44ch;
+}
+
+.served__url {
+  font-family: var(--mono);
+  font-size: var(--step-1);
+  color: var(--settled);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--settled) 40%, transparent);
+}
+
+.served__url:hover {
+  border-bottom-color: var(--settled);
+}
+
+.served--gone {
+  border-left-color: var(--expired);
+}
+
+.served--gone h2 {
+  color: var(--expired);
+}
+
+.served__url--dead {
+  color: var(--slate);
+  text-decoration: line-through;
+  border-bottom: 0;
+}
+
 /* ---------- jobs ---------- */
 
 .columns {

@@ -27,6 +27,10 @@ export interface Job {
   blockIndex: number; // block currently running (0 before block 1 starts)
   paidThrough: number; // highest settled block index
   containerId?: string | undefined;
+  /** Container port the renter asked to have published, if any. */
+  exposedPort?: number | undefined;
+  /** Where the running workload is reachable while the job is paid for. */
+  serviceUrl?: string | undefined;
   startedAt?: number | undefined; // ms epoch; clock starts here (container ready), not at payment
   boundaryAt?: number | undefined; // ms epoch of the current block's end
   status: JobStatus;

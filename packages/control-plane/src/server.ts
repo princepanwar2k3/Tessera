@@ -28,6 +28,7 @@ const PlaceJobBody = z.object({
   image: z.string().min(1),
   cmd: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
+  exposedPort: z.number().int().min(1).max(65535).optional(),
 });
 
 export interface ServerDeps {

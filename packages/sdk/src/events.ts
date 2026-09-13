@@ -16,6 +16,7 @@ export interface JobSnapshot {
   asset: string;
   clockStartedAt?: string;
   boundaryAt?: string;
+  serviceUrl?: string;
 }
 
 export type JobEvent =

@@ -1,4 +1,5 @@
 import Docker from "dockerode";
+import { connect } from "node:net";
 import type { ContainerSpec, DockerRunner, StartedContainer } from "./docker-runner.js";
 import { buildHostConfig } from "./container-config.js";
 import type { JobArtifacts } from "../spec/index.js";
@@ -42,16 +43,75 @@ export class DockerodeRunner implements DockerRunner {
       Image: spec.image,
       Cmd: spec.cmd,
       Env: spec.env ? Object.entries(spec.env).map(([k, v]) => `${k}=${v}`) : undefined,
-      HostConfig: buildHostConfig(spec.caps, spec.artifactHostDir),
+      ...(spec.exposedPort !== undefined
+        ? { ExposedPorts: { [`${spec.exposedPort}/tcp`]: {} } }
+        : {}),
+      HostConfig: buildHostConfig(spec.caps, spec.artifactHostDir, spec.exposedPort),
       Labels: { "tessera.jobId": spec.jobId },
     });
     await container.start();
     this.artifactDirsByContainer.set(container.id, spec.artifactHostDir);
-    this.logger.info({ jobId: spec.jobId, containerId: container.id }, "container started");
-    // Simplification for this lane: "ready" = docker reports the container
-    // running immediately after start() resolves. A real workload-readiness
-    // probe (health check, port poll) is out of scope here.
-    return { containerId: container.id, readyAt: Date.now() };
+
+    const hostPort =
+      spec.exposedPort === undefined
+        ? undefined
+        : await this.readHostPort(container, spec.exposedPort);
+
+    this.logger.info(
+      { jobId: spec.jobId, containerId: container.id, hostPort },
+      "container started",
+    );
+
+    // "Ready" is docker reporting the container running. For a service that
+    // publishes a port we wait for it to accept a connection instead, because
+    // SPEC §5.2 starts the billing clock at readiness and a renter must not
+    // pay for a block the server spent still booting.
+    const readyAt = hostPort === undefined ? Date.now() : await this.waitForPort(hostPort);
+
+    return {
+      containerId: container.id,
+      readyAt,
+      ...(hostPort !== undefined ? { hostPort } : {}),
+    };
+  }
+
+  /** Docker assigns the host port at start; read it back off the container. */
+  private async readHostPort(
+    container: { inspect: () => Promise<unknown> },
+    exposedPort: number,
+  ): Promise<number | undefined> {
+    const info = (await container.inspect()) as {
+      NetworkSettings?: { Ports?: Record<string, Array<{ HostPort?: string }> | null> };
+    };
+    const binding = info.NetworkSettings?.Ports?.[`${exposedPort}/tcp`]?.[0]?.HostPort;
+    const port = binding ? Number(binding) : Number.NaN;
+    return Number.isInteger(port) && port > 0 ? port : undefined;
+  }
+
+  /**
+   * Poll until the published port accepts a connection, or give up.
+   *
+   * Giving up still returns a timestamp: a workload that never listens is the
+   * renter's problem, not a reason for the provider to serve unbilled time.
+   */
+  private async waitForPort(port: number, timeoutMs = 15_000): Promise<number> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const open = await new Promise<boolean>((resolve) => {
+        const socket = connect({ host: "127.0.0.1", port });
+        const done = (ok: boolean) => {
+          socket.destroy();
+          resolve(ok);
+        };
+        socket.once("connect", () => done(true));
+        socket.once("error", () => done(false));
+        socket.setTimeout(500, () => done(false));
+      });
+      if (open) return Date.now();
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    this.logger.warn({ port }, "container never accepted a connection; starting the clock anyway");
+    return Date.now();
   }
 
   async kill(containerId: string, signal: "SIGTERM" | "SIGKILL"): Promise<void> {

@@ -14,8 +14,17 @@ export const DEFAULT_RESOURCE_CAPS: ResourceCaps = {
  * listing declares, and make the root filesystem read-only with a small
  * tmpfs for scratch plus one bind-mounted artifact directory.
  */
-export function buildHostConfig(caps: ResourceCaps, artifactHostDir: string) {
+export function buildHostConfig(
+  caps: ResourceCaps,
+  artifactHostDir: string,
+  exposedPort?: number | undefined,
+) {
   return {
+    // Docker picks a free host port ("0"), which we read back after start.
+    // Fixed ports would collide the moment two renters wanted the same one.
+    ...(exposedPort !== undefined
+      ? { PortBindings: { [`${exposedPort}/tcp`]: [{ HostPort: "0" }] } }
+      : {}),
     Memory: caps.memoryBytes,
     NanoCpus: Math.round(caps.cpus * 1_000_000_000),
     PidsLimit: caps.pidsLimit ?? DEFAULT_RESOURCE_CAPS.pidsLimit,

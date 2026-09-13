@@ -28,6 +28,8 @@ export interface JobSnapshot {
   asset: string;
   clockStartedAt?: string | undefined;
   boundaryAt?: string | undefined;
+  /** Live only while the job is paid for. */
+  serviceUrl?: string | undefined;
 }
 
 export interface BlockReceipt {

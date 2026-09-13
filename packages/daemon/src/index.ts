@@ -61,6 +61,7 @@ async function main() {
       network: config.network,
       payTo: config.payTo,
       facilitatorUrl: config.facilitatorUrl,
+      publicHost: config.publicHost,
     },
     logger,
     jobStore,
