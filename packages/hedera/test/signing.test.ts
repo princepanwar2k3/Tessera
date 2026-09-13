@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PrivateKey } from '@hiero-ledger/sdk';
-import type { BlockReceipt } from '@bsp/protocol';
+import type { BlockReceipt, Receipt } from '@bsp/protocol';
 import { signReceipt, verifyReceiptSignature } from '../src/signing.js';
+import { HcsReceiptSink } from '../src/sink.js';
+import type { ReceiptTopic } from '../src/topic.js';
 
 const receipt = (over: Partial<BlockReceipt> = {}): BlockReceipt => ({
   v: 1,
@@ -61,5 +63,56 @@ describe('receipt signing', () => {
     const original = receipt();
     signReceipt(original, key, 'provider');
     expect(original.providerSig).toBeUndefined();
+  });
+});
+
+describe('signing through the sink, end to end', () => {
+  /**
+   * The regression this file existed to prevent and did not: the sink parsed
+   * the provider key with fromStringDer, which silently accepts a raw ECDSA
+   * key and yields a different one. Receipts were signed with a key unrelated
+   * to the provider's account, so providerSig verified against nothing.
+   */
+  it('a receipt signed with a RAW ECDSA key verifies against that account', async () => {
+    const key = PrivateKey.generateECDSA();
+    const raw = key.toStringRaw();
+
+    const published: Receipt[] = [];
+    const sink = new HcsReceiptSink({
+      topic: {
+        publish: async (r: Receipt) => {
+          published.push(r);
+          return { txId: '0.0.1@1.1', sequenceNumber: published.length };
+        },
+      } as unknown as ReceiptTopic,
+      signWith: raw,
+    });
+
+    await sink.record(receipt());
+    await sink.drain();
+
+    expect(published).toHaveLength(1);
+    expect(verifyReceiptSignature(published[0]!, key.publicKey, 'provider')).toBe(true);
+  });
+
+  it('rejects a signature made by a different key', async () => {
+    const key = PrivateKey.generateECDSA();
+    const impostor = PrivateKey.generateECDSA();
+
+    const published: Receipt[] = [];
+    const sink = new HcsReceiptSink({
+      topic: {
+        publish: async (r: Receipt) => {
+          published.push(r);
+          return { txId: '0.0.1@1.1', sequenceNumber: 1 };
+        },
+      } as unknown as ReceiptTopic,
+      signWith: key.toStringRaw(),
+    });
+
+    await sink.record(receipt());
+    await sink.drain();
+
+    expect(verifyReceiptSignature(published[0]!, impostor.publicKey, 'provider')).toBe(false);
   });
 });
