@@ -12,7 +12,10 @@ import { HederaPayer, Marketplace, type MachineRow } from "@bsp/sdk";
 const FEE_PAYER = process.env["FACILITATOR_FEE_PAYER"] ?? "0.0.7162784";
 const REGISTRY =
   process.env["REGISTRY_URL"] ?? process.env["CONTROL_PLANE_URL"] ?? "http://127.0.0.1:8090";
-const CONSOLE_URL = process.env["CONSOLE_URL"] ?? "http://127.0.0.1:5175";
+// Matches the port the console is documented to start on. Vite's own default
+// (5173) is often taken by another project, and a printed link to a port
+// nothing is serving reads as a broken demo rather than a port mismatch.
+const CONSOLE_URL = process.env["CONSOLE_URL"] ?? "http://127.0.0.1:5180";
 const ACCOUNT = process.env["PAYER_ID"] ?? process.env["HEDERA_OPERATOR_ID"] ?? "";
 const KEY = process.env["PAYER_KEY"] ?? process.env["HEDERA_OPERATOR_KEY"] ?? "";
 const TOKEN = process.env["HTS_SETTLEMENT_TOKEN_ID"];
