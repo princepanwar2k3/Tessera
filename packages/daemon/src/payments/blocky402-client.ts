@@ -1,4 +1,4 @@
-import type { PaymentRequirement } from "../spec/index.js";
+import { toV2Requirements } from "@bsp/protocol";
 import type {
   FacilitatorClient,
   VerifyPaymentInput,
@@ -15,16 +15,22 @@ import type { Logger } from "../logging.js";
  * facilitator, because that needs a funded Hedera testnet ECDSA account.
  * Read the response-key handling below as "best known", not "verified".
  *
- * Two things differ from SPEC §6.1's v1 envelope and are translated here
- * rather than in the protocol package, so the daemon keeps speaking one
- * internal shape:
+ * The v1 -> v2 translation lives in `@bsp/protocol` (`toV2Requirements`), not
+ * here, because the renter signs a payload over those exact requirements and
+ * this client verifies against its own copy. Deriving them in two places
+ * would turn any disagreement into an opaque signature failure.
  *
- *   - v2 names the amount `amount`; v1 called it `maxAmountRequired`.
- *   - v2 networks are `hedera:testnet`; v1 used `hedera-testnet`.
- *
- * Every Hedera requirement must also carry `extra.feePayer` equal to the
+ * Every Hedera requirement must carry `extra.feePayer` equal to the
  * facilitator's advertised signer: it co-signs as fee payer and submits the
  * transfer, so a requirement without it cannot settle.
+ *
+ * VERIFIED against the live facilitator on 2026-09-13 — verify returns
+ * `{isValid, payer}`, settle returns `{success, transaction, network, payer}`,
+ * and a duplicate settle FAILS with DUPLICATE_TRANSACTION and an empty
+ * `transaction` (docs/facilitator-contract.md §3a). The facilitator is not
+ * idempotent, so SPEC §6.3's guarantee is kept by the daemon's
+ * `(jobId, blockIndex)` receipt guard, which runs before this client is ever
+ * called.
  */
 export interface Blocky402Options {
   baseUrl: string;
@@ -32,18 +38,6 @@ export interface Blocky402Options {
   feePayer: string;
   timeoutMs?: number;
   fetchImpl?: typeof globalThis.fetch;
-}
-
-interface V2Requirements {
-  scheme: "exact";
-  network: string;
-  amount: string;
-  asset: string;
-  payTo: string;
-  resource: string;
-  description: string;
-  maxTimeoutSeconds: number;
-  extra: { feePayer: string };
 }
 
 export class Blocky402FacilitatorClient implements FacilitatorClient {
@@ -128,28 +122,4 @@ export class Blocky402FacilitatorClient implements FacilitatorClient {
       clearTimeout(timer);
     }
   }
-}
-
-/** SPEC §6.1's v1 envelope to the facilitator's v2 wire. */
-export function toV2Requirements(
-  requirement: PaymentRequirement,
-  feePayer: string,
-): V2Requirements {
-  const accept = requirement.accepts[0];
-  return {
-    scheme: "exact",
-    network: toV2Network(accept.network),
-    amount: accept.maxAmountRequired,
-    // HBAR is asset 0.0.0 on the v2 wire; HTS tokens keep their own id.
-    asset: accept.asset === "HBAR" ? "0.0.0" : accept.asset,
-    payTo: accept.payTo,
-    resource: accept.resource,
-    description: accept.description,
-    maxTimeoutSeconds: 300,
-    extra: { feePayer },
-  };
-}
-
-export function toV2Network(network: string): string {
-  return network.replace(/^hedera-/, "hedera:");
 }

@@ -28,8 +28,14 @@ export interface BlockMeta {
   blockIndex: number;
   blockSeconds: number;
   leadSeconds: number;
-  /** RFC 3339 UTC millis */
-  clockStartedAt?: string;
+  /**
+   * RFC 3339 UTC millis. Absent — or explicitly undefined — until block 1's
+   * container is ready, since SPEC §5.2 starts the clock at readiness rather
+   * than at payment. `| undefined` is deliberate under
+   * exactOptionalPropertyTypes: the daemon sets the field to undefined rather
+   * than omitting it.
+   */
+  clockStartedAt?: string | undefined;
   windowOpensAt: string;
   boundaryAt: string;
 }

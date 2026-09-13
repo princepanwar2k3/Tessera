@@ -1,6 +1,7 @@
 export { Marketplace, type MarketplaceOptions, type RentOptions, type MachineRow } from "./marketplace.js";
 export { Job, type JobOptions, type JobResult, type JobHandlers } from "./job.js";
 export { FakePayer, type Payer, type PaymentContext } from "./payer.js";
+export { HederaPayer, type HederaPayerOptions } from "./hedera-payer.js";
 export { JobEventStream, type StreamOptions } from "./stream.js";
 export {
   decideRenewal,

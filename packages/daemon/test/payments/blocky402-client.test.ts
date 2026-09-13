@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  Blocky402FacilitatorClient,
-  toV2Network,
-  toV2Requirements,
-} from "../../src/payments/blocky402-client.js";
+import { Blocky402FacilitatorClient } from "../../src/payments/blocky402-client.js";
 import { createLogger } from "../../src/logging.js";
 import type { PaymentRequirement } from "../../src/spec/index.js";
 
@@ -41,31 +37,6 @@ function requirement(over: Partial<PaymentRequirement["accepts"][0]> = {}): Paym
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status });
 }
-
-describe("v1 envelope to v2 wire", () => {
-  it("renames maxAmountRequired to amount", () => {
-    expect(toV2Requirements(requirement(), "0.0.7162784").amount).toBe("100000");
-  });
-
-  it("maps HBAR to asset 0.0.0", () => {
-    expect(toV2Requirements(requirement(), "0.0.7162784").asset).toBe("0.0.0");
-  });
-
-  it("leaves an HTS token id alone", () => {
-    expect(toV2Requirements(requirement({ asset: "0.0.429274" }), "0.0.7").asset).toBe("0.0.429274");
-  });
-
-  it("converts the network separator", () => {
-    expect(toV2Network("hedera-testnet")).toBe("hedera:testnet");
-    expect(toV2Network("hedera-mainnet")).toBe("hedera:mainnet");
-  });
-
-  it("carries the advertised fee payer, without which nothing settles", () => {
-    expect(toV2Requirements(requirement(), "0.0.7162784").extra).toEqual({
-      feePayer: "0.0.7162784",
-    });
-  });
-});
 
 describe("Blocky402FacilitatorClient", () => {
   const opts = (fetchImpl: unknown) => ({

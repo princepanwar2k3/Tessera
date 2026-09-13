@@ -188,6 +188,12 @@ importers:
       '@bsp/protocol':
         specifier: workspace:*
         version: link:../protocol
+      '@x402/core':
+        specifier: ^2.25.0
+        version: 2.25.0
+      '@x402/hedera':
+        specifier: ^2.25.0
+        version: 2.25.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(bn.js@5.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.1.2)
     devDependencies:
       '@types/node':
         specifier: ^20.14.15
