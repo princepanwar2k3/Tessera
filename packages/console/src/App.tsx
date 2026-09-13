@@ -7,6 +7,7 @@ import { MachineList } from "./components/MachineList.js";
 import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
 import { DemoMeter } from "./components/DemoMeter.js";
+import { LatestJob } from "./components/LatestJob.js";
 
 export function App() {
   const [machines, setMachines] = useState<MachineListing[]>([]);
@@ -56,9 +57,11 @@ export function App() {
         <JobView jobId={view.jobId} />
       ) : (
         <>
-          {/* The most characteristic thing here is a payment stream you can
-              watch, so the page leads with one rather than with copy. */}
-          <DemoMeter />
+          {/* The page leads with a payment stream rather than with copy. A
+              real one when anything is running; the scripted sample only when
+              nothing is, so the meter is never decoration beside a live
+              marketplace. */}
+          {jobs.length > 0 && jobs[0] ? <LatestJob jobId={jobs[0].jobId} /> : <DemoMeter />}
 
           <div className="columns">
             <section className="panel card">
