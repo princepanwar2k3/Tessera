@@ -23,8 +23,9 @@ describe('network wiring', () => {
 
 describe("parsePrivateKey", () => {
   // Raw ECDSA: 64 hex chars, no DER prefix. This is what portal.hedera.com
-  // issues and what x402 requires.
-  const RAW_ECDSA = "PLACEHOLDER_KEY_REDACTED";
+  // issues and what x402 requires. Generated here rather than pinned, so no
+  // real key is ever committed — the parser cares about encoding, not value.
+  const RAW_ECDSA = PrivateKey.generateECDSA().toStringRaw();
 
   it("reads a raw ECDSA hex key by default", () => {
     const key = parsePrivateKey(RAW_ECDSA);
