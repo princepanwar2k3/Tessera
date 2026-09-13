@@ -487,12 +487,16 @@ Direct about both columns.
 
 ### Track requirements
 
+Six of the seven extra-points criteria, without stretching any of them. The
+seventh — multi-agent negotiation — was skipped on purpose rather than bolted
+on to reach a number.
+
 | Requirement | Where |
 |---|---|
 | x402-gated service settled through Blocky402 | `packages/daemon/src/payments/blocky402-client.ts` — **live on testnet** |
 | An agent consuming it, real paid request end to end | `packages/agent`, `packages/renter` — **10 real blocks** |
 | Compute metering rather than flat per-request | `packages/core/src/clock.ts` — priced by duration |
-| HTS token / custom fee schedule | TESS `0.0.10518829` — **settlement is real**; the 2% fee is configured, not assessed |
+| HTS token / custom fee schedule | TESS `0.0.10518829` — every block is a real token transfer. A 2% fractional fee is configured on the token; in these runs the payer is the exempt collector, so it is not assessed |
 | Verifiable audit trail on HCS | topic `0.0.10507942` — every block receipt and termination |
 | On-chain agent identity (HCS-14) | `packages/hedera/src/uaid.ts` |
 | Agent discovery | `packages/control-plane` — `GET /machines` |

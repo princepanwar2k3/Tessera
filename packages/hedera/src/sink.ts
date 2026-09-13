@@ -21,6 +21,7 @@ import { PrivateKey } from '@hiero-ledger/sdk';
 import type { Receipt } from '@bsp/protocol';
 import type { ReceiptTopic } from './topic.js';
 import { signReceipt } from './signing.js';
+import { parsePrivateKey } from './client.js';
 
 export interface HcsReceiptSinkOptions {
   topic: ReceiptTopic;
@@ -46,8 +47,13 @@ export class HcsReceiptSink {
 
   constructor(opts: HcsReceiptSinkOptions) {
     this.topic = opts.topic;
+    // parsePrivateKey, not fromStringDer: given a raw ECDSA key -- which is
+    // what Hedera's portal issues -- fromStringDer does not throw. It returns
+    // a *different* key, so receipts carried a providerSig that verified
+    // against nothing. A signature nobody can check is not evidence, which is
+    // the entire reason receipts are signed.
     this.signWith =
-      typeof opts.signWith === 'string' ? PrivateKey.fromStringDer(opts.signWith) : opts.signWith;
+      typeof opts.signWith === 'string' ? parsePrivateKey(opts.signWith) : opts.signWith;
     this.onError = opts.onError;
   }
 
