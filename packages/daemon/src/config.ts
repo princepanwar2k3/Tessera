@@ -1,9 +1,12 @@
 import { z } from "zod";
+import { resolve } from "node:path";
 
 const ConfigSchema = z.object({
   port: z.coerce.number().int().positive().default(8080),
   host: z.string().default("0.0.0.0"),
-  dataDir: z.string().default("./data"),
+  // Resolved here so every consumer gets an absolute path; a bind mount
+  // source that is merely relative is silently a volume name to Docker.
+  dataDir: z.string().default("./data").transform((d) => resolve(d)),
   dockerSocketPath: z.string().default("/var/run/docker.sock"),
   controlPlaneUrl: z.string().url().optional(),
   facilitatorMode: z.enum(["mock", "blocky402"]).default("mock"),

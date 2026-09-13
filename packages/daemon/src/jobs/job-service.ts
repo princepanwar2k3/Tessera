@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { mkdir } from "node:fs/promises";
 import {
   validateLeadTime,
@@ -255,7 +255,10 @@ export class JobService {
 
   private async startContainer(job: Job): Promise<void> {
     job.status = "starting";
-    const artifactHostDir = join(this.config.dataDir, "artifacts", job.id);
+    // Absolute, always. Docker treats a relative bind source as a *volume
+    // name*, so `data/artifacts/j_…` fails as "invalid characters for a local
+    // volume name" rather than as the path it obviously is.
+    const artifactHostDir = resolve(this.config.dataDir, "artifacts", job.id);
     await mkdir(artifactHostDir, { recursive: true });
 
     const started = await this.docker.createAndStart({
