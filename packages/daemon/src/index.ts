@@ -20,6 +20,7 @@ import {
 import { runBenchmark } from "./controlplane/attestation.js";
 import { collectHardwareSpecs } from "./controlplane/specs.js";
 import { buildServer } from "./server.js";
+import { providerUaid } from "@bsp/hedera";
 import { JobEventBus } from "./events/job-events.js";
 
 async function main() {
@@ -28,6 +29,16 @@ async function main() {
 
   const registry = new JobRegistry();
   const events = new JobEventBus();
+
+  // HCS-14 identity, derived from this node's name and the account it is paid
+  // into. Receipts used to carry a hand-written string that identified
+  // nothing; this one is deterministic and other tooling can read it.
+  const uaid = await providerUaid({
+    name: config.providerId,
+    accountId: config.payTo,
+    network: config.hederaNetwork,
+  });
+  logger.info({ uaid }, "HCS-14 provider identity");
   const jobStore = new JobStore(config.dataDir);
   const clock = new SystemClock();
   const docker = new DockerodeRunner(logger, config.dockerSocketPath);
@@ -57,7 +68,7 @@ async function main() {
       dataDir: config.dataDir,
       graceMs: config.gracePeriodMs,
       resourceCaps: { noNewPrivileges: config.noNewPrivileges },
-      providerUaid: config.providerUaid,
+      providerUaid: uaid,
       network: config.network,
       payTo: config.payTo,
       facilitatorUrl: config.facilitatorUrl,

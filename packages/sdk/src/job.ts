@@ -82,6 +82,8 @@ export class Job {
    * tick — which spams the renter's log and the console ticker alike.
    */
   private readonly announced = new Set<number>();
+  /** Blocks whose refusal has already been reported, so a retry loop is quiet. */
+  private readonly refused = new Set<number>();
 
   private resolveResult!: (r: JobResult) => void;
   private readonly completion = new Promise<JobResult>((resolve) => {
@@ -310,11 +312,13 @@ export class Job {
         if (res.status === 402) {
           // The provider refused the payment and said why. Surface it once
           // per attempt rather than retrying in silence until the boundary.
-          const refused = (await res.json().catch(() => ({}))) as { paymentError?: string };
-          if (refused.paymentError) {
+          const body = (await res.json().catch(() => ({}))) as { paymentError?: string };
+          // Retries inside the window hit the same wall; say it once.
+          if (body.paymentError && !this.refused.has(blockIndex)) {
+            this.refused.add(blockIndex);
             this.emit(
               "error",
-              new Error(`block ${blockIndex} refused: ${refused.paymentError}`),
+              new Error(`block ${blockIndex} refused: ${explainRefusal(body.paymentError)}`),
             );
           }
         }
@@ -384,4 +388,22 @@ export class Job {
       timer.unref?.();
     });
   }
+}
+
+/**
+ * The facilitator's error codes, in words a renter can act on.
+ *
+ * Its preflight rejects a transfer the ledger would refuse, which in practice
+ * is almost always an empty wallet — but the code says "preflight failed",
+ * which sends people looking at their payload rather than their balance.
+ */
+function explainRefusal(code: string): string {
+  if (/preflight_failed/i.test(code)) {
+    return `${code} (usually: not enough of the settlement asset to pay for this block)`;
+  }
+  if (/insufficient/i.test(code)) return `${code} (not enough balance)`;
+  if (/amount_mismatch/i.test(code)) {
+    return `${code} (the transfer did not match the requirement — is payTo the payer?)`;
+  }
+  return code;
 }

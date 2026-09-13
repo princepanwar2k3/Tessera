@@ -537,6 +537,47 @@ button {
   font-family: var(--mono);
 }
 
+/* ---------- the consensus log ---------- */
+
+.ledger__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+
+.ledger__head h2 { margin-bottom: 0; }
+
+table.ledger {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--step-0);
+  min-width: 34rem;
+}
+
+table.ledger th,
+table.ledger td {
+  text-align: left;
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+table.ledger th {
+  color: var(--slate);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+table.ledger .mono { font-family: var(--mono); }
+table.ledger a { color: var(--settled); }
+
+.ledger__uaid { color: var(--slate); }
+.ledger__end { color: var(--expired); }
+
 /* ---------- the renter's agent ---------- */
 
 .renter {

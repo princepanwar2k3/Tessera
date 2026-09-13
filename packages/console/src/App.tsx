@@ -11,6 +11,7 @@ import { RenterPanel } from "./components/RenterPanel.js";
 import { RentForm } from "./components/RentForm.js";
 import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
 import { LatestJob } from "./components/LatestJob.js";
+import { Ledger } from "./components/Ledger.js";
 
 export function App() {
   const [machines, setMachines] = useState<MachineListing[]>([]);
@@ -117,6 +118,8 @@ export function App() {
               )}
             </section>
           </div>
+
+          <Ledger />
 
           <section className="prose">
             <h2>Pay for a block before it runs</h2>

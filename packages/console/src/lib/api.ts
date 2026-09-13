@@ -35,6 +35,38 @@ export async function fetchJobs(signal?: AbortSignal): Promise<Placement[]> {
   return ((await res.json()) as { jobs: Placement[] }).jobs;
 }
 
+export interface LedgerReceipt {
+  type: "block_receipt" | "terminated" | "aborted";
+  jobId: string;
+  blockIndex?: number;
+  finalBlockIndex?: number;
+  amount?: string;
+  asset?: string;
+  txId?: string;
+  reason?: string;
+  providerUaid?: string;
+  renterUaid?: string;
+  clockStartedAt?: string;
+  boundaryAt?: string;
+  providerSig?: string;
+}
+
+/**
+ * Receipts read back from Hedera's consensus service through the mirror node.
+ *
+ * Deliberately not our own copy of what we published: the point of putting
+ * receipts on a public log is that anyone can check the provider's account of
+ * what it billed without asking the provider. Serving our own records here
+ * would quietly defeat that.
+ */
+export async function fetchLedger(jobId?: string): Promise<LedgerReceipt[]> {
+  const query = jobId ? `?job=${encodeURIComponent(jobId)}` : "";
+  const res = await fetch(`${REGISTRY_URL}/receipts${query}`);
+  if (res.status === 503) throw new Error("No consensus topic is configured on this registry.");
+  if (!res.ok) throw new Error(`The mirror node is unreachable (${res.status}).`);
+  return ((await res.json()) as { receipts: LedgerReceipt[] }).receipts;
+}
+
 export interface JobArtifacts {
   jobId: string;
   status: string;

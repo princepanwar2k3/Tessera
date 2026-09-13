@@ -1,162 +1,247 @@
-# Demo script — four minutes
+# Demo — script and run sheet
 
-The run itself is 75 seconds: four blocks at 15s, a fifth declined, a website
-that dies at the boundary. Everything else is narration over it.
+Read **The pitch** first; it is what you say. **The run sheet** is what you type.
 
-Rehearsed end to end on 13 September 2026.
+Two terminals, two browser tabs. Four minutes.
 
 ---
 
-## Before you hit record
+## The pitch
 
-**Start everything first.** Nothing below films a service starting up — the
-marketplace, the provider node and the console are already running when the
-recording begins.
+> **Tessera is a marketplace where you rent a computer by the block, and pay
+> for each block *before* it runs.**
+>
+> Here is the problem it solves. If you rent compute from someone you don't
+> know, one of you has to go first. Either the provider serves you on credit
+> and hopes you pay — and an agent can drain them and vanish — or you pay a
+> deposit up front and hope they deliver, which is the escrow model that
+> crypto payments were supposed to make unnecessary. Somebody is always
+> exposed.
+>
+> Tessera cuts time into fixed blocks — say fifteen seconds. Every block is
+> paid for before it runs. And while the current block is still running, the
+> provider opens a window to buy the next one. That lookahead is the whole
+> trick: it absorbs the few seconds a payment takes to settle, so service is
+> continuous while neither side ever extends credit.
+>
+> Four things fall out of that, and they're the whole design:
+>
+> **The provider never works unpaid.** The block being served is always
+> already settled.
+>
+> **The renter can lose at most one block.** If the provider vanishes
+> mid-block, that's the exposure. Fifteen seconds of compute.
+>
+> **It ends predictably.** Stop paying and the container stops at the next
+> boundary. Not early — a payment might still land. Not late — that would be
+> unpaid work. There is no grace period and no negotiation.
+>
+> **Nobody takes custody.** Payment goes renter to provider directly. Our
+> marketplace does discovery and placement, then gets out of the way. We kill
+> it mid-job in our test suite and the job keeps running and keeps billing.
+>
+> Everything you're about to see is real. Real payments on Hedera testnet,
+> settled through the Blocky402 x402 facilitator, in an HTS token we minted,
+> with every receipt published to Hedera's consensus service where anyone can
+> audit it.
+
+Then run it.
+
+### Closing, after the site dies
+
+> Ten blocks bought, the eleventh refused because the renter's wallet was
+> empty, and a website that existed for exactly as long as it was paid for.
+>
+> What's here: block-metered billing rather than flat per-request, an HTS
+> settlement token with a custom fee, agent discovery through the registry, an
+> audit trail on Hedera's consensus service, HCS-14 identities on every
+> receipt, and the renewal loop, which is a streaming payment.
+>
+> What isn't: it's not deployed to a public URL, there's one provider node
+> rather than two, and we deliberately skipped multi-agent negotiation. The
+> settlement is real; the marketing is not.
+
+---
+
+## Before you record
+
+Start the marketplace, the console, and build the renter's site image. None of
+this is filmed.
 
 ```sh
 pnpm install && pnpm -r build
 docker build -t tessera-demo-site:latest examples/demo-site
+
+node packages/control-plane/dist/index.js &
+
+VITE_REGISTRY_URL=http://127.0.0.1:8090 VITE_HCS_TOPIC_ID=0.0.10507942 \
+  pnpm -F @bsp/console dev &
 ```
 
-Check the renter has HBAR — HCS submits need it, and token creation drains it:
+Set the renter's wallet to exactly ten blocks, so it runs out where you expect:
+
+```sh
+node --env-file=.env tools/e2e/scripts/set-renter-blocks.mjs 10
+```
+
+**Run this before every take** — the previous take spends it.
+
+Check HBAR too; HCS submits need it, and under ~5 ℏ you want the faucet:
 
 ```sh
 curl -s "https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10401938" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['balance']['balance']/1e8,'HBAR')"
 ```
 
-Under ~5 ℏ, top up at [faucet.hedera.com](https://faucet.hedera.com).
-
-```sh
-# 1. marketplace
-node packages/control-plane/dist/index.js &
-
-# 2. provider node — 15s blocks, 10s window, priced in TESS
-PORT=8080 PROVIDER_ID=node-a \
-  DEFAULT_BLOCK_SECONDS=15 DEFAULT_LEAD_SECONDS=10 \
-  PRICE_PER_BLOCK=25 ASSET=0.0.10518829 \
-  PAY_TO=0.0.10507867 PUBLIC_HOST=127.0.0.1 \
-  FACILITATOR_MODE=blocky402 FACILITATOR_FEE_PAYER=0.0.7162784 \
-  RECEIPT_SINK=local+hcs HCS_RECEIPT_TOPIC_ID=0.0.10507942 \
-  HEDERA_NETWORK=testnet \
-  HEDERA_OPERATOR_ID=$HEDERA_OPERATOR_ID HEDERA_OPERATOR_KEY=$HEDERA_OPERATOR_KEY \
-  CONTROL_PLANE_URL=http://127.0.0.1:8090 NO_NEW_PRIVILEGES=false \
-  node packages/daemon/dist/index.js &
-
-# 3. console
-VITE_REGISTRY_URL=http://127.0.0.1:8090 VITE_HCS_TOPIC_ID=0.0.10507942 \
-  pnpm -F @bsp/console dev
-```
-
-**Screen layout.** Terminal on the left, browser on the right. The browser has
-two tabs ready: the console, and a blank tab for the rented site. Have HashScan
-open in a third.
-
-Terminal font large enough to read on a phone.
+**Layout.** Terminal 1 (provider) and Terminal 2 (renter) side by side on the
+left. Browser on the right with two tabs: the console, and a blank one for the
+rented site. Terminal font large enough to read on a phone.
 
 ---
 
-## 0:00 – 0:15 · The claim
+## The run sheet
 
-Open on the console, machine listed, nothing running.
+### 0:00 — The pitch
 
-> "This is a marketplace for compute where you pay for a container one block at
-> a time, before each block runs. Stop paying and it dies at the boundary.
-> Here's what that actually looks like."
+Static console on screen. Deliver the pitch above. No typing.
 
-## 0:15 – 0:40 · The problem
-
-Stay on the console.
-
-> "A container consumes resources continuously, but payment arrives in lumps.
-> You either serve on credit and let people drain you, or you take a deposit up
-> front and become the thing crypto was supposed to remove. Tessera does
-> neither: time is cut into fixed blocks, each one is paid before it begins,
-> and the window to buy the next one opens while the current one is still
-> running. That lookahead absorbs settlement latency, so nobody extends credit."
-
-## 0:40 – 1:00 · A machine for rent
-
-Point at the listing in the console.
-
-> "This node is advertising 15-second blocks at a quarter of a TESS each —
-> that's an HTS token. Block size is per-listing, so it's something renters
-> shop on, not something the protocol fixes."
-
-## 1:00 – 2:15 · The run — 75 seconds
+### 0:50 — Terminal 1: a provider lists a machine
 
 ```sh
-node --env-file=.env tools/e2e/scripts/hosted-site-demo.mjs
+node --env-file=.env packages/renter/dist/provider-cli.js list \
+  --name node-a --block-seconds 15 --lead 10 --price 25 --asset TESS
 ```
 
-As `SITE UP` appears, **open that URL in the second browser tab.**
-
-> "Ordinary container image — a static site, nothing in it knows Tessera
-> exists. Block one was paid before the image was even pulled."
-
-Switch to the console. It leads with this job: the meter filling, receipts
-stamping in, a link to the live site.
-
-Every 15 seconds:
-
-> "Ten seconds before each boundary the provider offers the next block — that's
-> the amber. The renter pays while the current block is still running."
-
-Around block 3, paste a transaction id into HashScan.
-
-> "Real transfer, Hedera testnet, renter to provider. The marketplace never
-> touches it."
-
-Refresh the site tab once or twice. Still up.
-
-## 2:15 – 2:40 · The kill
-
 ```
-window for block 5 — DECLINING (max_blocks_reached)
+  Listing node-a
+    block size      15s   what a renter buys at a time
+    renewal window  10s   how long they have to buy the next one
+    price           25 TESS  per block
 ```
 
-> "Budget's done. Watch what the renter does about it — **nothing.** No cancel
-> message, no shutdown request. They just stop buying."
+> "Someone with a spare machine decides what to sell and how finely to slice
+> it. Fifteen-second blocks, a ten-second window to renew, a quarter of a TESS
+> a block. Block size is per-listing, so it's something renters shop on — the
+> protocol doesn't fix it."
 
-Then:
+Point at the HCS-14 line in the log.
+
+> "It mints itself an HCS-14 identity derived from its own metadata and the
+> account it's paid into. Every receipt it signs carries that."
+
+### 1:20 — Terminal 2: a renter goes shopping
+
+```sh
+node --env-file=.env packages/renter/dist/cli.js machines
+```
 
 ```
-SITE DOWN  http://127.0.0.1:32940
+MACHINE   BLOCK   PRICE/BLOCK   WINDOW   HARDWARE        STATUS
+node-a    15s     25 TESS       10s      12 vCPU 31GB    online
+
+You hold 250 TESS — 10 blocks, about 2.5 min on node-a.
 ```
 
-Refresh the site tab — connection refused. The console strip freezes, the last
-block turns red, the banner reads *This site is gone*.
+> "The renter sees what's listed and what they can afford. Ten blocks. Note
+> that — they're about to ask for twenty."
 
-> "The watchdog reached the boundary, saw block five wasn't paid, and stopped.
-> Not a second early — a payment could still have landed. Not a second late —
-> that's unpaid work."
+### 1:40 — Rent it, and host a real site
 
-## 2:40 – 3:20 · The public record
+```sh
+node --env-file=.env packages/renter/dist/cli.js rent \
+  --machine node-a --image tessera-demo-site:latest --blocks 20
+```
 
-Open `https://hashscan.io/testnet/topic/0.0.10507942`.
+```
+  spend cap 500 TESS
+  you hold  250 TESS — enough for 10 blocks
 
-> "The renter doesn't have to take the provider's word for any of this. Every
-> block receipt goes to Hedera's consensus service — job, block number, amount,
-> transaction, clock start, boundary — plus a final message saying why it
-> ended. A billing history anyone can audit."
+  The cap is 20 blocks but you can only pay for 10.
+  The site will go down when the money runs out, at block 10.
 
-Open `https://hashscan.io/testnet/token/0.0.10518829`.
+  Your site is live:  http://127.0.0.1:32943
+```
 
-> "Blocks are priced in an HTS token with a fractional custom fee, which is
-> where a marketplace's cut comes from. On the ledger, not in a slide."
+**Open that URL in the browser.**
 
-## 3:20 – 4:00 · Close
+> "An ordinary container image — a static site, nothing in it knows Tessera
+> exists. Block one was paid before the image was even pulled. And it warned
+> us up front: the budget says twenty blocks, the wallet says ten."
 
-> "Four blocks bought, one declined, a website that existed for exactly as long
-> as it was paid for. The provider never computed on credit. The renter never
-> risked more than one block. And the marketplace never touched the money — we
-> kill it mid-job in a test and the job keeps running and keeps billing.
->
-> What's not done: it isn't deployed anywhere public, there's one node rather
-> than two, and identities are plain strings rather than HCS-14. The settlement
-> is real."
+### 2:00 — The console
+
+Switch to the console tab. It leads with this job.
+
+> "The meter fills as each block is served. Ten seconds before every boundary
+> the provider offers the next block — that's the amber, with the countdown.
+> The renter pays while the current block is still running."
+
+Point at a receipt, then open one transaction on HashScan.
+
+> "Real transfer on Hedera testnet, renter to provider, in our HTS token. The
+> marketplace never touches it."
+
+### 2:40 — It runs out
+
+```
+paid    block 10
+window  block 11 — paying
+error   block 11 refused: ...preflight_failed (usually: not enough of the
+        settlement asset to pay for this block)
+```
+
+> "The wallet is empty. The renter tries, the facilitator refuses, they retry
+> inside the window and it still fails."
+
+Then, at the boundary — switch to the site tab and refresh:
+
+> "Connection refused. The watchdog reached the boundary, saw block eleven
+> wasn't paid, and stopped serving. The console freezes the meter, the last
+> block turns red, and the banner says the site is gone."
+
+### 3:10 — Hedera's immutable log
+
+Scroll to **On the consensus log** in the console.
+
+> "This table isn't our database. It's read back from Hedera's consensus
+> service through a mirror node — every block, the amount, the transaction,
+> and the HCS-14 identity that signed it. Anyone can check what this provider
+> billed without asking the provider. That's what makes shortening blocks
+> detectable rather than deniable."
+
+Open the topic on HashScan for one beat.
+
+### 3:30 — Close
+
+Deliver the closing above.
 
 ---
+
+## Where each Hedera track item shows up
+
+| Track item | Where it appears on camera |
+|---|---|
+| x402 service settled through Blocky402 | every `paid` line — the facilitator co-signs and submits |
+| An agent consuming it, real paid request | Terminal 2, blocks 1–10 |
+| Compute metering, not flat per-request | the meter; you buy 15-second blocks |
+| HTS token / custom fee | priced in TESS `0.0.10518829`, 2% fractional fee |
+| Verifiable audit trail on HCS | **On the consensus log** panel, topic `0.0.10507942` |
+| On-chain agent identity (HCS-14) | provider startup line, and the *Signed by* column |
+| Agent discovery | `tessera machines` reads the registry |
+| Recurring / streamed payments | the renewal loop — one payment per block |
+
+Not shown, deliberately: multi-agent negotiation (skipped), a second node, and
+a public deployment.
+
+## Identifiers
+
+| | |
+|---|---|
+| Renter | `0.0.10401938` |
+| Provider | `0.0.10507867` |
+| HCS receipt topic | `0.0.10507942` |
+| HTS token | `0.0.10518829` (TESS, 2dp, 2% fee) |
+| Facilitator | `https://api.testnet.blocky402.com` |
 
 ## Timing
 
@@ -164,27 +249,26 @@ Open `https://hashscan.io/testnet/token/0.0.10518829`.
 |---|---|
 | Block | 15s |
 | Renewal window | 10s |
-| Blocks bought | 4 |
-| Run, rent → site down | **75s** |
-| Observed settle time | ~6s, leaving 4s of window unused |
+| Blocks affordable | 10 |
+| Rent → site down | **~155s** |
 
-Do **not** shorten the window below 10s for a recording. The facilitator's paid
-leg measures ~3.2s and the daemon's verify-then-settle ~4.8s; at an 8s window
-one renewal took 7 seconds, which is one hiccup away from killing the job on
-camera. Ten seconds has held every time.
+Ten blocks is about 2.5 minutes of run. If you need it tighter, use
+`set-renter-blocks.mjs 6` and the run drops to ~95s — the narration is the same.
 
-Shortening the *block* below 15s is fine and saves a few seconds, but the window
-must stay under it.
+Do **not** shorten the window below 10s. The facilitator's paid leg measures
+~3.2s and the daemon's verify-then-settle ~4.8s; at 8s one renewal took 7
+seconds, which is one hiccup from killing the job on camera.
 
 ## If something goes wrong
 
 | Symptom | Cause |
 |---|---|
-| Containers exit instantly, `exec /bin/sh: operation not permitted` | Docker's `no-new-privileges` on this kernel. `NO_NEW_PRIVILEGES=false`. |
-| Daemon dies at startup with an empty log | ssh2's native bindings segfault. Don't build them — see `pnpm-workspace.yaml`. |
-| `INSUFFICIENT_PAYER_BALANCE` | Renter is out of HBAR. Faucet. |
-| Payment rejected, amount mismatch | `PAY_TO` equals the payer. They must be different accounts. |
-| Registry shows no machines | Daemon started before the control plane, or `CONTROL_PLANE_URL` unset. |
+| Containers exit instantly, `operation not permitted` | Docker's `no-new-privileges` on this kernel. `NO_NEW_PRIVILEGES=false`. |
+| Daemon dies at startup, empty log | ssh2's native bindings segfault. Don't build them — see `pnpm-workspace.yaml`. |
+| `INSUFFICIENT_PAYER_BALANCE` | Renter is out of **HBAR**. Faucet. |
+| Job ends at block 1 | Renter is out of **TESS**. Run `set-renter-blocks.mjs`. |
+| Amount mismatch on every payment | `PAY_TO` equals the payer. They must be different accounts. |
+| `tessera machines` shows nothing | Daemon started before the control plane, or `CONTROL_PLANE_URL` unset. |
 
 **Record three times and keep the cleanest.** The facilitator is a third party
-and testnet is testnet — keep a good take as backup before you need one.
+and testnet is testnet.

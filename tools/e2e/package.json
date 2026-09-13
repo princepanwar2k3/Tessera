@@ -16,7 +16,8 @@
     "@bsp/daemon": "workspace:*",
     "@bsp/protocol": "workspace:*",
     "@bsp/sdk": "workspace:*",
-    "@bsp/agent": "workspace:*"
+    "@bsp/agent": "workspace:*",
+    "@hiero-ledger/sdk": "^2.85.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.15",

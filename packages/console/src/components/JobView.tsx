@@ -5,6 +5,7 @@ import { stopRenewing } from "../lib/renter.js";
 import { HCS_TOPIC_ID, topicUrl } from "../lib/explorer.js";
 import { Meter } from "./Meter.js";
 import { Ticker } from "./Ticker.js";
+import { Ledger } from "./Ledger.js";
 
 /**
  * Screen 2: one job, watched live.
@@ -105,15 +106,7 @@ export function JobView({
       {error && <p className="error">{error}</p>}
       <Ticker lines={state.ticker} asset={state.snapshot?.asset} />
 
-      {HCS_TOPIC_ID && (
-        <p className="empty" style={{ marginTop: "0.6rem" }}>
-          Every receipt above is also on the public consensus log —{" "}
-          <a href={topicUrl(HCS_TOPIC_ID)} target="_blank" rel="noreferrer">
-            topic {HCS_TOPIC_ID}
-          </a>
-          .
-        </p>
-      )}
+      <Ledger jobId={jobId} />
 
       {ended && (
         <section className="card panel" aria-label="Container output">

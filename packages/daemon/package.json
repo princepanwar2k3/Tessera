@@ -38,6 +38,7 @@
     ".": {
       "types": "./dist/harness.d.ts",
       "import": "./dist/harness.js"
-    }
+    },
+    "./package.json": "./package.json"
   }
 }
