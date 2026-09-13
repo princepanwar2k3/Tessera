@@ -1,49 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchMachines, placeJob } from "./lib/api.js";
+import { fetchJobs, fetchMachines, type Placement } from "./lib/api.js";
 import type { MachineListing } from "./lib/types.js";
+import { HCS_TOPIC_ID, topicUrl } from "./lib/explorer.js";
+import { useRoute } from "./lib/route.js";
 import { MachineList } from "./components/MachineList.js";
+import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
 import { DemoMeter } from "./components/DemoMeter.js";
 
-type View = { name: "machines" } | { name: "job"; jobId: string };
-
 export function App() {
   const [machines, setMachines] = useState<MachineListing[]>([]);
-  const [view, setView] = useState<View>({ name: "machines" });
-  const [error, setError] = useState<string | undefined>();
-  const [busy, setBusy] = useState<string | undefined>();
+  const [jobs, setJobs] = useState<Placement[]>([]);
+  const [view, setView] = useRoute();
+  const [offline, setOffline] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setMachines(await fetchMachines());
-      setError(undefined);
+      const [m, j] = await Promise.all([fetchMachines(), fetchJobs()]);
+      setMachines(m);
+      setJobs(j);
+      setOffline(false);
     } catch {
-      setError("Can't reach the registry. Check it is running, then reload.");
+      setOffline(true);
     }
   }, []);
 
   useEffect(() => {
     void load();
-    const id = window.setInterval(() => void load(), 10_000);
+    const id = window.setInterval(() => void load(), 5000);
     return () => window.clearInterval(id);
   }, [load]);
-
-  const rent = async (machine: MachineListing) => {
-    setBusy(machine.machineId);
-    try {
-      const { jobId } = await placeJob({
-        machineId: machine.machineId,
-        image: "busybox:latest",
-        renterUaid: "uaid:console:viewer",
-      });
-      setView({ name: "job", jobId });
-      setError(undefined);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start the job.");
-    } finally {
-      setBusy(undefined);
-    }
-  };
 
   return (
     <main className="shell">
@@ -53,14 +39,14 @@ export function App() {
         <nav>
           <button
             className="tab"
-            aria-current={view.name === "machines" ? "page" : undefined}
-            onClick={() => setView({ name: "machines" })}
+            aria-current={view.name === "home" ? "page" : undefined}
+            onClick={() => setView({ name: "home" })}
           >
             Machines
           </button>
           {view.name === "job" && (
             <button className="tab" aria-current="page">
-              Job {view.jobId.slice(0, 10)}
+              {view.jobId.slice(0, 12)}…
             </button>
           )}
         </nav>
@@ -74,14 +60,28 @@ export function App() {
               watch, so the page leads with one rather than with copy. */}
           <DemoMeter />
 
-          <section className="panel card">
-            <h2>Machines for rent</h2>
-            {error ? (
-              <p className="error">{error}</p>
-            ) : (
-              <MachineList machines={machines} onRent={rent} busyMachineId={busy} />
-            )}
-          </section>
+          <div className="columns">
+            <section className="panel card">
+              <h2>Machines for rent</h2>
+              {offline ? (
+                <p className="error">
+                  Can&apos;t reach the registry. Start it with{" "}
+                  <code>node packages/control-plane/dist/index.js</code>.
+                </p>
+              ) : (
+                <MachineList machines={machines} />
+              )}
+            </section>
+
+            <section className="panel card">
+              <h2>Live jobs</h2>
+              {offline ? (
+                <p className="empty">Waiting for the registry.</p>
+              ) : (
+                <JobList jobs={jobs} />
+              )}
+            </section>
+          </div>
 
           <section className="prose">
             <h2>Pay for a block before it runs</h2>
@@ -105,6 +105,31 @@ export function App() {
                 <b>No custody.</b> Payment goes renter to provider. Nothing is escrowed.
               </li>
             </ul>
+
+            <h2 style={{ marginTop: "1.75rem" }}>Rent one</h2>
+            <p>
+              This page watches jobs; it never starts or pays for one. Renting means signing a
+              payment with your own key, and a browser tab is the wrong place to keep one —
+              which is the same reason the marketplace does not keep one either.
+            </p>
+            <pre className="snippet">{`const job = await marketplace.rent({
+  machine: "node-a",
+  image: "ghcr.io/you/ffmpeg:latest",
+  budget: hbar(2),
+  maxBlocks: 20,
+});
+
+job.on("block", (b) => console.log(b.index, b.txId));
+await job.result();`}</pre>
+            {HCS_TOPIC_ID && (
+              <p>
+                Every block settled here is published to the public consensus log,{" "}
+                <a href={topicUrl(HCS_TOPIC_ID)} target="_blank" rel="noreferrer">
+                  topic {HCS_TOPIC_ID}
+                </a>
+                . Nobody has to take the provider&apos;s word for what was billed.
+              </p>
+            )}
           </section>
         </>
       )}

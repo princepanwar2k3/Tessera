@@ -142,6 +142,29 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     reply.raw.on("close", cleanup);
   });
 
+  /**
+   * Read-through to the daemon's artifacts. Convenience only — the same bytes
+   * are on the provider, and the SDK fetches them directly. It exists so the
+   * console can show container output without a CORS arrangement with every
+   * provider node, exactly like the event mirror above.
+   */
+  app.get<{ Params: { jobId: string } }>("/jobs/:jobId/artifacts", async (req, reply) => {
+    const placement = deps.broker.getPlacement(req.params.jobId);
+    if (!placement) return reply.status(404).send({ error: "job_not_placed" });
+
+    try {
+      const res = await fetch(
+        `${placement.endpoint.replace(/\/$/, "")}/jobs/${req.params.jobId}/artifacts`,
+      );
+      return reply.status(res.status).send(await res.json());
+    } catch (err) {
+      return reply.status(502).send({
+        error: "daemon_unreachable",
+        detail: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
   app.get<{ Querystring: { job?: string; limit?: string } }>("/receipts", async (req, reply) => {
     if (!deps.receipts.configured) {
       return reply.status(503).send({ error: "receipts_not_configured" });

@@ -179,3 +179,40 @@ describe("buildStrip", () => {
     expect(strip.some((c) => c.windowOpen)).toBe(false);
   });
 });
+
+describe("reduceMeter — replayed streams", () => {
+  it("ends a job once, however many times the terminal event arrives", () => {
+    // A reconnecting client replays the buffer, so the terminal event can be
+    // delivered again. A job ends once, and the ticker must not grow.
+    const terminated: JobEvent = {
+      type: "terminated",
+      jobId: "j",
+      reason: "unpaid_boundary",
+      finalBlockIndex: 2,
+      receipt: { reason: "unpaid_boundary", finalBlockIndex: 2 },
+    };
+    const state = fold([stateEvent(), blockEvent(1), terminated, terminated, terminated]);
+
+    expect(state.ticker.filter((l) => l.kind === "terminated")).toHaveLength(1);
+    expect(state.terminated).toEqual({ reason: "unpaid_boundary", finalBlockIndex: 2 });
+  });
+
+  it("ignores a settlement that arrives after termination", () => {
+    const state = fold([
+      stateEvent(),
+      blockEvent(1),
+      {
+        type: "terminated",
+        jobId: "j",
+        reason: "unpaid_boundary",
+        finalBlockIndex: 1,
+        receipt: { reason: "unpaid_boundary", finalBlockIndex: 1 },
+      },
+    ]);
+    const strip = buildStrip(state, T0);
+
+    // The strip freezes at the block it died on.
+    expect(strip).toHaveLength(1);
+    expect(strip[0]!.tone).toBe("expired");
+  });
+});

@@ -79,6 +79,8 @@ export function reduceMeter(state: MeterState, event: JobEvent): MeterState {
       };
 
     case "terminated":
+      // A replayed stream can deliver this more than once; a job ends once.
+      if (state.terminated) return state;
       return {
         ...state,
         windowFor: undefined,

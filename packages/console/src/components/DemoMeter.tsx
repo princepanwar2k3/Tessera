@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { emptyMeterState, reduceMeter } from "../lib/meter-state.js";
 import type { JobEvent } from "../lib/types.js";
 import { Meter } from "./Meter.js";
@@ -23,13 +23,17 @@ const REPLAY_PAUSE_MS = 5000;
  */
 export function DemoMeter() {
   const [cycle, setCycle] = useState(0);
+  // Stable identity: DemoCycle's effect depends on this, and the page around
+  // it re-renders on every registry poll. An inline arrow would restart the
+  // whole schedule several times a minute.
+  const onFinished = useCallback(() => setCycle((c) => c + 1), []);
 
   return (
     <>
       {/* Remounting per cycle is the reset. The reducer has no reset action on
           purpose: in the real console a `state` event arrives on every stream
           reconnect and must never wipe the receipts already shown. */}
-      <DemoCycle key={cycle} onFinished={() => setCycle((c) => c + 1)} />
+      <DemoCycle key={cycle} onFinished={onFinished} />
       <p className="empty" style={{ margin: "0.6rem 0 0" }}>
         A sample job at {BLOCK_SECONDS}s blocks with a {LEAD_SECONDS}s renewal window. Block size
         is set per listing; the default is 30s.
@@ -122,7 +126,7 @@ function DemoCycle({ onFinished }: { onFinished: () => void }) {
   return (
     <>
       <Meter state={state} />
-      <Ticker lines={state.ticker} />
+      <Ticker lines={state.ticker} fixedHeight />
     </>
   );
 }

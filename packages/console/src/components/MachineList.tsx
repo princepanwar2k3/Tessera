@@ -2,8 +2,6 @@ import type { MachineListing } from "../lib/types.js";
 
 interface Props {
   machines: MachineListing[];
-  onRent?: (machine: MachineListing) => void;
-  busyMachineId?: string | undefined;
 }
 
 /**
@@ -12,7 +10,7 @@ interface Props {
  * Block size sits beside price deliberately — it is half the cost of a job
  * (SPEC §4.2) and the thing this marketplace lets renters shop on.
  */
-export function MachineList({ machines, onRent, busyMachineId }: Props) {
+export function MachineList({ machines }: Props) {
   if (machines.length === 0) {
     return <p className="empty">No machines online. Start a provider node to list one.</p>;
   }
@@ -45,15 +43,6 @@ export function MachineList({ machines, onRent, busyMachineId }: Props) {
             <dd>{Math.round(m.benchmark.score).toLocaleString()}</dd>
           </dl>
 
-          {onRent && (
-            <button
-              className="btn"
-              onClick={() => onRent(m)}
-              disabled={!m.live || busyMachineId === m.machineId}
-            >
-              {busyMachineId === m.machineId ? "Starting…" : "Rent"}
-            </button>
-          )}
         </article>
       ))}
     </div>
