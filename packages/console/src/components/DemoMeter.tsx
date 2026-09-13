@@ -4,8 +4,12 @@ import type { JobEvent } from "../lib/types.js";
 import { Meter } from "./Meter.js";
 import { Ticker } from "./Ticker.js";
 
-const BLOCK_SECONDS = 10;
-const LEAD_SECONDS = 4;
+// Matches what a real node here lists. Deliberately not 10s/4s: the measured
+// facilitator round trip is ~3.2s, so a 4s window admits one attempt and no
+// retry, and SPEC §4.1 now says so. The landing page should not advertise the
+// one configuration the spec warns against.
+const BLOCK_SECONDS = 12;
+const LEAD_SECONDS = 8;
 const PRICE = "1500";
 /** Blocks the demo renter buys before stopping. The last one then expires. */
 const BLOCKS_BOUGHT = 5;
@@ -35,8 +39,9 @@ export function DemoMeter() {
           reconnect and must never wipe the receipts already shown. */}
       <DemoCycle key={cycle} onFinished={onFinished} />
       <p className="empty" style={{ margin: "0.6rem 0 0" }}>
-        A sample job at {BLOCK_SECONDS}s blocks with a {LEAD_SECONDS}s renewal window. Block size
-        is set per listing; the default is 30s.
+        A sample job at {BLOCK_SECONDS}s blocks with an {LEAD_SECONDS}s renewal window. Block
+        size is set per listing; the reference default is 30s, and a window needs 8s to leave
+        room for a retry.
       </p>
     </>
   );
