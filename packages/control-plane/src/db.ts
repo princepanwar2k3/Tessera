@@ -24,7 +24,8 @@ export function openDatabase(path: string): Database.Database {
       provider_id   TEXT PRIMARY KEY,
       endpoint      TEXT NOT NULL,
       registered_at INTEGER NOT NULL,
-      last_seen_at  INTEGER NOT NULL
+      last_seen_at  INTEGER NOT NULL,
+      active_jobs   INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS machines (
@@ -47,6 +48,14 @@ export function openDatabase(path: string): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_placements_machine ON placements(machine_id);
   `);
+
+  // Added after the first deployments; existing databases predate it.
+  const providerColumns = db.prepare(`PRAGMA table_info(providers)`).all() as Array<{
+    name: string;
+  }>;
+  if (!providerColumns.some((c) => c.name === "active_jobs")) {
+    db.exec(`ALTER TABLE providers ADD COLUMN active_jobs INTEGER NOT NULL DEFAULT 0`);
+  }
 
   return db;
 }

@@ -668,6 +668,12 @@ code {
   color: var(--faint);
 }
 
+/* A node carrying work reads as busy without reading as unavailable — it can
+   still take another job. */
+.live--busy {
+  color: var(--window);
+}
+
 /* ---------- buttons ---------- */
 
 .btn {
@@ -802,6 +808,18 @@ table.ledger .mono {
 .renter--on b {
   color: var(--ink);
   font-weight: 500;
+}
+
+.renter--on:hover {
+  text-decoration: none;
+  border-color: color-mix(in srgb, var(--settled) 45%, var(--edge));
+}
+
+.renter__go {
+  color: var(--settled);
+  border-left: 1px solid var(--edge);
+  padding-left: 0.6rem;
+  margin-left: 0.15rem;
 }
 
 .renter__row {

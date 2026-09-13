@@ -29,8 +29,9 @@ export interface Placement {
  * does not hold one either. Renting happens from the SDK or the agent, and
  * everything that follows is visible here.
  */
-export async function fetchJobs(signal?: AbortSignal): Promise<Placement[]> {
-  const res = await fetch(`${REGISTRY_URL}/jobs`, signal ? { signal } : {});
+export async function fetchJobs(renter?: string, signal?: AbortSignal): Promise<Placement[]> {
+  const query = renter ? `?renter=${encodeURIComponent(renter)}` : "";
+  const res = await fetch(`${REGISTRY_URL}/jobs${query}`, signal ? { signal } : {});
   if (!res.ok) throw new Error(`The registry answered ${res.status}.`);
   return ((await res.json()) as { jobs: Placement[] }).jobs;
 }

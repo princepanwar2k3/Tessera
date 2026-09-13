@@ -5,6 +5,7 @@ import {
   savedRenterUrl,
   type RenterIdentity,
 } from "../lib/renter.js";
+import { hrefFor } from "../lib/route.js";
 
 interface Props {
   onConnected: (baseUrl: string, identity: RenterIdentity) => void;
@@ -53,12 +54,16 @@ export function RenterPanel({ onConnected, identity, baseUrl }: Props) {
 
   if (identity) {
     return (
-      <div className="renter renter--on">
+      <a
+        className="renter renter--on"
+        href={hrefFor({ name: "renter", renterId: identity.accountId })}
+      >
         <span className="renter__dot" />
         <span>
           Paying as <b className="mono">{identity.accountId}</b>
         </span>
-      </div>
+        <span className="renter__go">your rentals</span>
+      </a>
     );
   }
 

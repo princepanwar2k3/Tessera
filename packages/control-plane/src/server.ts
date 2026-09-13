@@ -70,10 +70,12 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     return reply.status(201).send(result);
   });
 
-  app.post<{ Params: { providerId: string } }>(
+  app.post<{ Params: { providerId: string }; Body: { activeJobs?: number } }>(
     "/providers/:providerId/heartbeat",
     async (req, reply) => {
-      const known = deps.registry.heartbeat(req.params.providerId);
+      const reported = Number(req.body?.activeJobs);
+      const activeJobs = Number.isInteger(reported) && reported >= 0 ? reported : 0;
+      const known = deps.registry.heartbeat(req.params.providerId, activeJobs);
       if (!known) return reply.status(404).send({ error: "provider_not_registered" });
       return reply.send({ ok: true, at: new Date().toISOString() });
     },
@@ -104,7 +106,9 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     });
   });
 
-  app.get("/jobs", async (_req, reply) => reply.send({ jobs: deps.broker.listPlacements() }));
+  app.get<{ Querystring: { renter?: string } }>("/jobs", async (req, reply) =>
+    reply.send({ jobs: deps.broker.listPlacements(req.query.renter) }),
+  );
 
   app.get<{ Params: { jobId: string } }>("/jobs/:jobId", async (req, reply) => {
     const placement = deps.broker.getPlacement(req.params.jobId);

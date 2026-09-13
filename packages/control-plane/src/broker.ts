@@ -95,14 +95,30 @@ export class Broker {
     return row ? { ...row, placedAt: new Date(row.placedAt).toISOString() } : undefined;
   }
 
-  listPlacements(): Placement[] {
-    const rows = this.db
-      .prepare(
-        `SELECT job_id AS jobId, machine_id AS machineId, provider_id AS providerId,
-                endpoint, renter_uaid AS renterUaid, placed_at AS placedAt
-           FROM placements ORDER BY placed_at DESC`,
-      )
-      .all() as Array<Omit<Placement, "placedAt"> & { placedAt: number }>;
+  /**
+   * Placements, newest first. `renter` narrows to one renter's own jobs — the
+   * marketplace is public, but a renter watching their own spend should not
+   * have to read past everyone else's.
+   *
+   * Matched on a suffix so a Hedera account id works as well as the full
+   * uaid: `uaid:testnet:0.0.10401938` is what gets stored, and `0.0.10401938`
+   * is what a person has to hand.
+   */
+  listPlacements(renter?: string): Placement[] {
+    const select = `SELECT job_id AS jobId, machine_id AS machineId, provider_id AS providerId,
+                           endpoint, renter_uaid AS renterUaid, placed_at AS placedAt
+                      FROM placements`;
+
+    const rows = (
+      renter
+        ? this.db
+            .prepare(
+              `${select} WHERE renter_uaid = ? OR renter_uaid LIKE ? ORDER BY placed_at DESC`,
+            )
+            .all(renter, `%${renter}`)
+        : this.db.prepare(`${select} ORDER BY placed_at DESC`).all()
+    ) as Array<Omit<Placement, "placedAt"> & { placedAt: number }>;
+
     return rows.map((r) => ({ ...r, placedAt: new Date(r.placedAt).toISOString() }));
   }
 

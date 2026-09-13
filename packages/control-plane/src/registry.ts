@@ -25,6 +25,8 @@ export type RegisterResult =
 export interface MachineRow extends MachineListing {
   live: boolean;
   lastSeenAt: string;
+  /** Jobs the node reports it is currently serving. */
+  activeJobs: number;
 }
 
 /**
@@ -89,11 +91,14 @@ export class Registry {
     return { ok: true, providerId: input.providerId, machines: input.machines.length };
   }
 
-  /** Returns false if the provider was never registered. */
-  heartbeat(providerId: string): boolean {
+  /**
+   * Record a heartbeat and what the node says it is carrying.
+   * Returns false if the provider was never registered.
+   */
+  heartbeat(providerId: string, activeJobs = 0): boolean {
     const result = this.db
-      .prepare(`UPDATE providers SET last_seen_at = ? WHERE provider_id = ?`)
-      .run(this.now(), providerId);
+      .prepare(`UPDATE providers SET last_seen_at = ?, active_jobs = ? WHERE provider_id = ?`)
+      .run(this.now(), activeJobs, providerId);
     return result.changes > 0;
   }
 
@@ -105,18 +110,21 @@ export class Registry {
   listMachines(opts: { liveOnly?: boolean } = {}): MachineRow[] {
     const rows = this.db
       .prepare(
-        `SELECT m.listing_json AS listingJson, p.last_seen_at AS lastSeenAt
+        `SELECT m.listing_json AS listingJson, p.last_seen_at AS lastSeenAt,
+                p.active_jobs AS activeJobs
            FROM machines m
            JOIN providers p ON p.provider_id = m.provider_id
           ORDER BY m.machine_id`,
       )
-      .all() as Array<{ listingJson: string; lastSeenAt: number }>;
+      .all() as Array<{ listingJson: string; lastSeenAt: number; activeJobs: number }>;
 
     const cutoff = this.now() - LIVENESS_TIMEOUT_MS;
     const machines = rows.map((row) => ({
       ...(JSON.parse(row.listingJson) as MachineListing),
       live: row.lastSeenAt >= cutoff,
       lastSeenAt: new Date(row.lastSeenAt).toISOString(),
+      // A node that has gone quiet is not still serving whatever it last said.
+      activeJobs: row.lastSeenAt >= cutoff ? (row.activeJobs ?? 0) : 0,
     }));
 
     return opts.liveOnly ? machines.filter((m) => m.live) : machines;

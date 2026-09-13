@@ -5,11 +5,11 @@ import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
 import { MachineList } from "./components/MachineList.js";
 import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
-import { LatestJob } from "./components/LatestJob.js";
+import { RenterDashboard } from "./components/RenterDashboard.js";
 import { Ledger } from "./components/Ledger.js";
 import { RenterPanel } from "./components/RenterPanel.js";
 import { RentForm } from "./components/RentForm.js";
-import { useRoute } from "./lib/route.js";
+import { hrefFor, useRoute } from "./lib/route.js";
 
 export function App() {
   const [machines, setMachines] = useState<MachineListing[]>([]);
@@ -40,8 +40,6 @@ export function App() {
     return () => window.clearInterval(id);
   }, [load]);
 
-  const newest = jobs[0];
-
   return (
     <main className="shell">
       <header className="masthead">
@@ -66,17 +64,10 @@ export function App() {
           </p>
           <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
         </>
+      ) : view.name === "renter" ? (
+        <RenterDashboard renterId={view.renterId} />
       ) : (
         <>
-          {/* The page leads with whatever is actually true: a running job if
-              there is one, otherwise the marketplace. Never a simulation —
-              an idle console that looks busy is worse than an empty one. */}
-          {newest && (
-            <section className="lead">
-              <LatestJob jobId={newest.jobId} />
-            </section>
-          )}
-
           <section className="panel card">
             <div className="panel__head">
               <h2>Machines for rent</h2>
@@ -115,20 +106,20 @@ export function App() {
             )}
           </section>
 
-          {!newest && loaded && !offline && (
-            <section className="panel card idle">
-              <h2>Nothing is running</h2>
-              <p>
-                Rent a machine above and its meter appears here — one block at a time, each
-                paid for before it runs.
-              </p>
-            </section>
-          )}
-
-          {jobs.length > 1 && (
+          {loaded && !offline && (
             <section className="panel card">
-              <h2>Earlier jobs</h2>
-              <JobList jobs={jobs.slice(1)} />
+              <div className="panel__head">
+                <h2>Jobs on this marketplace</h2>
+                {identity && (
+                  <a
+                    className="mono-link"
+                    href={hrefFor({ name: "renter", renterId: identity.accountId })}
+                  >
+                    yours only
+                  </a>
+                )}
+              </div>
+              <JobList jobs={jobs} />
             </section>
           )}
 

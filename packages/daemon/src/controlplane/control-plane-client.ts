@@ -9,9 +9,15 @@ export interface RegisterInput {
   machines: MachineListing[];
 }
 
+/** What a node reports about itself between registrations. */
+export interface Liveness {
+  /** Jobs currently being served. Renters see this as the node's load. */
+  activeJobs: number;
+}
+
 export interface ControlPlaneClient {
   register(info: RegisterInput): Promise<{ providerId: string }>;
-  heartbeat(providerId: string): Promise<void>;
+  heartbeat(providerId: string, liveness?: Liveness): Promise<void>;
 }
 
 /** Default when no control plane is configured: the daemon runs standalone. */
@@ -40,10 +46,14 @@ export class HttpControlPlaneClient implements ControlPlaneClient {
     return (await res.json()) as { providerId: string };
   }
 
-  async heartbeat(providerId: string): Promise<void> {
+  async heartbeat(providerId: string, liveness?: Liveness): Promise<void> {
     const res = await fetch(
       `${this.baseUrl.replace(/\/$/, "")}/providers/${providerId}/heartbeat`,
-      { method: "POST" },
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(liveness ?? { activeJobs: 0 }),
+      },
     );
     if (!res.ok) throw new Error(`control-plane heartbeat failed: ${res.status}`);
   }

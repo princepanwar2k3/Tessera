@@ -188,6 +188,7 @@ async function rent(): Promise<void> {
   console.log("");
   if (url) console.log(`  ${bold("Your site is live:")}  ${green(url)}`);
   console.log(`  ${bold("Watch it settle:")}    ${CONSOLE_URL}/#/job/${job.id}`);
+  console.log(`  ${bold("Your dashboard:")}     ${CONSOLE_URL}/#/renter/${ACCOUNT}`);
   console.log("");
 
   const result = await job.result();

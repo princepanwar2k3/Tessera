@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
-export type Route = { name: "home" } | { name: "job"; jobId: string };
+export type Route =
+  | { name: "home" }
+  | { name: "job"; jobId: string }
+  | { name: "renter"; renterId: string };
 
 /**
  * Hash routing, so a running job has a URL.
@@ -10,12 +13,19 @@ export type Route = { name: "home" } | { name: "job"; jobId: string };
  * the list" is not a link.
  */
 export function parseHash(hash: string): Route {
-  const match = /^#\/job\/([^/?#]+)$/.exec(hash);
-  return match?.[1] ? { name: "job", jobId: decodeURIComponent(match[1]) } : { name: "home" };
+  const job = /^#\/job\/([^/?#]+)$/.exec(hash);
+  if (job?.[1]) return { name: "job", jobId: decodeURIComponent(job[1]) };
+
+  const renter = /^#\/renter\/([^/?#]+)$/.exec(hash);
+  if (renter?.[1]) return { name: "renter", renterId: decodeURIComponent(renter[1]) };
+
+  return { name: "home" };
 }
 
 export function hrefFor(route: Route): string {
-  return route.name === "job" ? `#/job/${encodeURIComponent(route.jobId)}` : "#/";
+  if (route.name === "job") return `#/job/${encodeURIComponent(route.jobId)}`;
+  if (route.name === "renter") return `#/renter/${encodeURIComponent(route.renterId)}`;
+  return "#/";
 }
 
 export function useRoute(): [Route, (route: Route) => void] {

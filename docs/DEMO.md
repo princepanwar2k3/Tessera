@@ -77,18 +77,18 @@ docker build -t tessera-demo-site:latest examples/demo-site
 
 ### 2. Reset anything already running
 
-Stale processes are the most common way a take goes wrong: an old registry
-holding `:8090` makes a new one die silently, and the console then reports "no
-consensus topic configured".
-
 ```sh
-pkill -f "control-plane/dist" ; pkill -f "daemon/dist" ; pkill -f "renter/dist"
-pkill -f "provider-cli" ; pkill -f "packages/console.*vite"
-docker ps -q --filter "ancestor=tessera-demo-site:latest" | xargs -r docker stop
-
-# confirm the ports are actually free
-for p in 8080 8090 8091 5180; do curl -sf -m2 127.0.0.1:$p >/dev/null && echo ":$p BUSY" || echo ":$p clear"; done
+bash scripts/reset.sh
 ```
+
+Stale processes are the most common way a take goes wrong, and they are not
+obvious: an old registry holding `:8090` makes the new one die with
+`EADDRINUSE`, and the only symptom is the console reporting "no consensus
+topic configured" — which looks like a config bug and is not one.
+
+The script stops every Tessera process, force-kills anything still holding a
+port after `SIGTERM`, drops rented containers, clears the registry database,
+and prints the port state so you can see it worked. Run it between takes.
 
 ### 3. Fund the renter — run before EVERY take
 
@@ -147,7 +147,11 @@ VITE_SETTLEMENT_TOKEN_SYMBOL=TESS \
 ```
 
 Open **http://127.0.0.1:5180**. With nothing listed it should say *No machines
-listed* and *Nothing is running* — that is the correct starting state.
+listed* — that is the correct starting state.
+
+The marketplace page stays the marketplace: machines, and the jobs running on
+them. A renter's own meter lives at `#/renter/<account>`, which the `rent`
+command prints, and which the "Paying as …" chip links to.
 
 **Layout.** Terminal 1 (provider) and Terminal 2 (renter) side by side on the
 left. Browser on the right with two tabs: the console, and a blank one for the

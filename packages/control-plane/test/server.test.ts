@@ -145,3 +145,36 @@ describe("control-plane HTTP surface", () => {
     expect(res.json()).toMatchObject({ status: "ok", receiptsConfigured: false });
   });
 });
+
+describe("a renter's own jobs", () => {
+  it("narrows the job list to one renter, by account id", async () => {
+    const db = openDatabase(":memory:");
+    const registry = new Registry(db);
+    const broker = new Broker(db, registry);
+    const app = buildServer({ registry, broker, receipts: new ReceiptReader(undefined) });
+
+    // Two renters on the same marketplace.
+    db.prepare(
+      `INSERT INTO placements (job_id, machine_id, provider_id, endpoint, renter_uaid, placed_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run("j_mine", "node-a", "node-a", "http://d", "uaid:testnet:0.0.111", 1);
+    db.prepare(
+      `INSERT INTO placements (job_id, machine_id, provider_id, endpoint, renter_uaid, placed_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run("j_theirs", "node-a", "node-a", "http://d", "uaid:testnet:0.0.222", 2);
+
+    const all = await app.inject({ method: "GET", url: "/jobs" });
+    expect(all.json().jobs).toHaveLength(2);
+
+    // An account id is what a person has to hand, not the full uaid.
+    const mine = await app.inject({ method: "GET", url: "/jobs?renter=0.0.111" });
+    expect(mine.json().jobs).toHaveLength(1);
+    expect(mine.json().jobs[0].jobId).toBe("j_mine");
+
+    const byUaid = await app.inject({ method: "GET", url: "/jobs?renter=uaid:testnet:0.0.222" });
+    expect(byUaid.json().jobs[0].jobId).toBe("j_theirs");
+
+    const nobody = await app.inject({ method: "GET", url: "/jobs?renter=0.0.999" });
+    expect(nobody.json().jobs).toEqual([]);
+  });
+});

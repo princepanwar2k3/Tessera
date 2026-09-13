@@ -15,6 +15,8 @@ export interface MachineListing {
   benchmark: { name: string; score: number; ranAt: string; selfReported: boolean };
   live: boolean;
   lastSeenAt: string;
+  /** Jobs the node reports it is currently serving. */
+  activeJobs?: number;
 }
 
 export interface JobSnapshot {

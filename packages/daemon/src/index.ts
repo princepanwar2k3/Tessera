@@ -117,11 +117,15 @@ async function main() {
   });
   logger.info({ registration }, "registered with control plane");
 
+  // Heartbeat often enough that a renter watching the marketplace sees a node
+  // become busy within a block, not a minute.
   setInterval(() => {
-    void controlPlane.heartbeat(config.providerId).catch((err) => {
-      logger.warn({ err }, "heartbeat failed");
-    });
-  }, 30_000).unref();
+    void controlPlane
+      .heartbeat(config.providerId, { activeJobs: registry.listActive().length })
+      .catch((err) => {
+        logger.warn({ err }, "heartbeat failed");
+      });
+  }, 5_000).unref();
 
   const app = buildServer(
     service,

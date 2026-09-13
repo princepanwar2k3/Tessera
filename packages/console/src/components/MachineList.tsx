@@ -47,9 +47,17 @@ export function MachineList({
           <article className={`machine${renting ? " machine--renting" : ""}`} key={m.machineId}>
             <header className="machine__top">
               <h3>{m.machineId}</h3>
-              <span className={m.live ? "live" : "live live--off"}>
-                {m.live ? "online" : "offline"}
-              </span>
+              {m.live ? (
+                (m.activeJobs ?? 0) > 0 ? (
+                  <span className="live live--busy">
+                    in use · {m.activeJobs} {m.activeJobs === 1 ? "job" : "jobs"}
+                  </span>
+                ) : (
+                  <span className="live">idle</span>
+                )
+              ) : (
+                <span className="live live--off">offline</span>
+              )}
             </header>
 
             <div className="machine__price">
