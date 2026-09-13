@@ -65,39 +65,93 @@ Then run it.
 
 ## Before you record
 
-Start the marketplace, the console, and build the renter's site image. None of
-this is filmed.
+Nothing below is filmed. Run it all first, in this order.
+
+### 1. Build once
 
 ```sh
+cd ~/workspace/tessera
 pnpm install && pnpm -r build
 docker build -t tessera-demo-site:latest examples/demo-site
-
-node packages/control-plane/dist/index.js &
-
-VITE_REGISTRY_URL=http://127.0.0.1:8090 VITE_HCS_TOPIC_ID=0.0.10507942 \
-  pnpm -F @bsp/console dev &
 ```
 
-Set the renter's wallet to exactly ten blocks, so it runs out where you expect:
+### 2. Reset anything already running
+
+Stale processes are the most common way a take goes wrong: an old registry
+holding `:8090` makes a new one die silently, and the console then reports "no
+consensus topic configured".
+
+```sh
+pkill -f "control-plane/dist" ; pkill -f "daemon/dist" ; pkill -f "renter/dist"
+pkill -f "provider-cli" ; pkill -f "packages/console.*vite"
+docker ps -q --filter "ancestor=tessera-demo-site:latest" | xargs -r docker stop
+
+# confirm the ports are actually free
+for p in 8080 8090 8091 5180; do curl -sf -m2 127.0.0.1:$p >/dev/null && echo ":$p BUSY" || echo ":$p clear"; done
+```
+
+### 3. Fund the renter — run before EVERY take
+
+The previous take spends it. Without this the job ends at block 1.
 
 ```sh
 node --env-file=.env tools/e2e/scripts/set-renter-blocks.mjs 10
 ```
 
-**Run this before every take** — the previous take spends it.
-
-Check HBAR too; HCS submits need it, and under ~5 ℏ you want the faucet:
+Check HBAR too — HCS submits need it. Under ~5 ℏ, use
+[faucet.hedera.com](https://faucet.hedera.com):
 
 ```sh
 curl -s "https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10401938" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['balance']['balance']/1e8,'HBAR')"
 ```
 
+### 4. Start the marketplace
+
+```sh
+CONTROL_PLANE_PORT=8090 \
+HCS_RECEIPT_TOPIC_ID=0.0.10507942 \
+  node packages/control-plane/dist/index.js
+```
+
+Verify it took the topic — `receiptsConfigured` must be `true`:
+
+```sh
+curl -s 127.0.0.1:8090/healthz
+```
+
+### 5. Start the renter agent
+
+Holds the key, so the console can rent without one. Only needed if you plan to
+rent from the UI rather than the terminal.
+
+```sh
+set -a; . ./.env; set +a
+RENTER_PORT=8091 REGISTRY_URL=http://127.0.0.1:8090 \
+FACILITATOR_FEE_PAYER=0.0.7162784 HTS_SETTLEMENT_TOKEN_ID=0.0.10518829 \
+  node packages/renter/dist/index.js
+```
+
+### 6. Start the console
+
+`--strictPort` so it fails loudly instead of drifting to another port while
+you are not looking.
+
+```sh
+VITE_REGISTRY_URL=http://127.0.0.1:8090 \
+VITE_HCS_TOPIC_ID=0.0.10507942 \
+VITE_HEDERA_NETWORK=testnet \
+VITE_SETTLEMENT_TOKEN_ID=0.0.10518829 \
+VITE_SETTLEMENT_TOKEN_SYMBOL=TESS \
+  pnpm -F @bsp/console exec vite --port 5180 --host 127.0.0.1 --strictPort
+```
+
+Open **http://127.0.0.1:5180**. With nothing listed it should say *No machines
+listed* and *Nothing is running* — that is the correct starting state.
+
 **Layout.** Terminal 1 (provider) and Terminal 2 (renter) side by side on the
 left. Browser on the right with two tabs: the console, and a blank one for the
 rented site. Terminal font large enough to read on a phone.
-
----
 
 ## The run sheet
 
@@ -107,9 +161,18 @@ Static console on screen. Deliver the pitch above. No typing.
 
 ### 0:50 — Terminal 1: a provider lists a machine
 
+Terminal 1:
+
 ```sh
-node --env-file=.env packages/renter/dist/provider-cli.js list \
-  --name node-a --block-seconds 15 --lead 10 --price 25 --asset TESS
+set -a; . ./.env; set +a
+
+PAY_TO=0.0.10507867 PUBLIC_HOST=127.0.0.1 NETWORK=hedera-testnet \
+FACILITATOR_MODE=blocky402 FACILITATOR_FEE_PAYER=0.0.7162784 \
+RECEIPT_SINK=local+hcs HCS_RECEIPT_TOPIC_ID=0.0.10507942 \
+HEDERA_NETWORK=testnet HTS_SETTLEMENT_TOKEN_ID=0.0.10518829 \
+CONTROL_PLANE_URL=http://127.0.0.1:8090 NO_NEW_PRIVILEGES=false \
+  node packages/renter/dist/provider-cli.js list \
+    --name node-a --block-seconds 15 --lead 10 --price 25 --asset TESS
 ```
 
 ```
@@ -131,6 +194,8 @@ Point at the HCS-14 line in the log.
 
 ### 1:20 — Terminal 2: a renter goes shopping
 
+Terminal 2:
+
 ```sh
 node --env-file=.env packages/renter/dist/cli.js machines
 ```
@@ -151,6 +216,10 @@ You hold 250 TESS — 10 blocks, about 2.5 min on node-a.
 node --env-file=.env packages/renter/dist/cli.js rent \
   --machine node-a --image tessera-demo-site:latest --blocks 20
 ```
+
+Twenty blocks against a ten-block wallet, deliberately — that is what makes it
+run out on camera. To rent from the console instead, click **Rent this
+machine** on the card; the form quotes the spend cap before anything is paid.
 
 ```
   spend cap 500 TESS
