@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { MachineListing } from "../lib/types.js";
 import { quoteRental, rentMachine, type ActiveJob, type Quote } from "../lib/renter.js";
 import { assetLabel } from "../lib/format.js";
+import { Banner } from "./Banner.js";
+import { useToast } from "./Toast.js";
 
 interface Props {
   machine: MachineListing;
@@ -20,6 +22,7 @@ export function RentForm({ machine, renterUrl, onRented, onCancel }: Props) {
   const [quote, setQuote] = useState<Quote | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const { notify } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -35,16 +38,18 @@ export function RentForm({ machine, renterUrl, onRented, onCancel }: Props) {
     setBusy(true);
     setError(undefined);
     try {
-      onRented(
-        await rentMachine(renterUrl, {
-          machineId: machine.machineId,
-          image,
-          blocks,
-          exposedPort: port,
-        }),
-      );
+      const job = await rentMachine(renterUrl, {
+        machineId: machine.machineId,
+        image,
+        blocks,
+        exposedPort: port,
+      });
+      notify("success", `Renting ${machine.machineId}`, `Block 1 paid — watching job ${job.jobId.slice(0, 12)}…`);
+      onRented(job);
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      setError(message);
+      notify("danger", "Rental failed", message);
     } finally {
       setBusy(false);
     }
@@ -112,7 +117,11 @@ export function RentForm({ machine, renterUrl, onRented, onCancel }: Props) {
         any point and the site ends at the next boundary.
       </p>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <Banner kind="danger" title="Couldn't rent this machine">
+          {error}
+        </Banner>
+      )}
 
       <div className="rent__actions">
         <button className="btn" type="submit" disabled={busy || !machine.live}>

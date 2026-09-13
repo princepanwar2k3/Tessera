@@ -6,6 +6,7 @@ import {
   type RenterIdentity,
 } from "../lib/renter.js";
 import { hrefFor } from "../lib/route.js";
+import { useToast } from "./Toast.js";
 
 interface Props {
   onConnected: (baseUrl: string, identity: RenterIdentity) => void;
@@ -24,6 +25,7 @@ export function RenterPanel({ onConnected, identity, baseUrl }: Props) {
   const [url, setUrl] = useState(baseUrl);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  const { notify } = useToast();
 
   const connect = async (target: string, quiet = false) => {
     setBusy(true);
@@ -32,13 +34,15 @@ export function RenterPanel({ onConnected, identity, baseUrl }: Props) {
       rememberRenterUrl(target);
       onConnected(target, who);
       setError(undefined);
+      if (!quiet) notify("success", "Renter agent connected", `Paying as ${who.accountId}`);
     } catch (err) {
+      const message =
+        err instanceof Error && err.name === "TimeoutError"
+          ? "No renter agent there. Start it with pnpm -F @bsp/renter start."
+          : (err as Error).message;
       if (!quiet) {
-        setError(
-          err instanceof Error && err.name === "TimeoutError"
-            ? "No renter agent there. Start it with pnpm -F @bsp/renter start."
-            : (err as Error).message,
-        );
+        setError(message);
+        notify("danger", "Couldn't connect the renter agent", message);
       }
     } finally {
       setBusy(false);
@@ -57,8 +61,11 @@ export function RenterPanel({ onConnected, identity, baseUrl }: Props) {
       <a
         className="renter renter--on"
         href={hrefFor({ name: "renter", renterId: identity.accountId })}
+        title="Your keys stay in the renter agent process — this page never sees them."
       >
-        <span className="renter__dot" />
+        <span className="renter__avatar" aria-hidden="true">
+          {identity.accountId.slice(-2)}
+        </span>
         <span>
           Paying as <b className="mono">{identity.accountId}</b>
         </span>
@@ -81,7 +88,7 @@ export function RenterPanel({ onConnected, identity, baseUrl }: Props) {
           {busy ? "Connecting…" : "Connect"}
         </button>
       </div>
-      <p className="empty">
+      <p className="renter__hint">
         Your keys stay in that process. This page never sees them, and neither does the
         marketplace.
       </p>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchLedger, type LedgerReceipt } from "../lib/api.js";
 import { HCS_TOPIC_ID, isRealTransaction, topicUrl, transactionUrl } from "../lib/explorer.js";
 import { assetLabel } from "../lib/format.js";
+import { Banner } from "./Banner.js";
 
 /**
  * The public billing history, read back from Hedera.
@@ -52,7 +53,11 @@ export function Ledger({ jobId }: { jobId?: string | undefined }) {
         records. Anyone can check these without asking the provider.
       </p>
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <Banner kind="warning" title="Couldn't read the consensus topic">
+          {error}
+        </Banner>
+      )}
       {!error && loading && <p className="empty">Reading the topic…</p>}
       {!error && !loading && receipts.length === 0 && (
         <p className="empty">Nothing published yet.</p>
