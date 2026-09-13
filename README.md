@@ -11,20 +11,21 @@ dies at the boundary — not a second before, not a second after.
 
 ## Live demo
 
-> **Not yet deployed.** The Phase 0 gate — one real settlement on Hedera testnet — is
-> still open, because it needs a funded testnet ECDSA account that this repository does
-> not and should not contain. See [Status](#status) for exactly what that blocks.
->
-> Everything below runs today against the local stack, with a mock facilitator and real
-> Docker containers. [Quickstart](#quickstart) is five commands.
+Settlement is real. Every block below was paid on **Hedera testnet** through the
+Blocky402 facilitator, and every receipt is on a public consensus topic.
 
 | | |
 |---|---|
-| Console | *pending deployment* |
-| Provider node | *pending deployment* |
-| HCS receipt topic | *pending — needs a funded testnet account* |
-| HTS settlement token | *not built (cut list item 4)* |
+| HCS receipt topic | [`0.0.10507942`](https://hashscan.io/testnet/topic/0.0.10507942) — the public billing history |
+| Provider account | [`0.0.10507867`](https://hashscan.io/testnet/account/0.0.10507867) |
+| Example settlement | [`0.0.7162784@1789277041.049191367`](https://hashscan.io/testnet/transaction/0.0.7162784@1789277041.049191367) |
+| Facilitator | `https://api.testnet.blocky402.com` (x402 v2, `hedera:testnet`) |
+| Console | run locally — [Quickstart](#quickstart) |
 | Video | *not recorded* |
+
+Not yet deployed to public URLs; the stack runs locally in five commands and
+settles against the real network. Nothing here is mocked except, by default,
+the facilitator — set `FACILITATOR_MODE=blocky402` and it is real too.
 
 ## The invariants
 
@@ -91,22 +92,20 @@ Every row is a test in `packages/core` and `packages/daemon`.
 
 ## Payment flow, with real values
 
-From a local run — control plane, provider daemon, a real `busybox` container, and the
-**mock** facilitator. The shapes are the real ones; the transaction ids are minted by the
-mock, not by Hedera. Replacing them with testnet values is exactly what the Phase 0 gate
-is waiting on.
+Job `j_546bf8e3`, on Hedera testnet: 20-second blocks with an 8-second renewal
+window, three blocks bought and the fourth declined. Renter `0.0.10401938`,
+provider `0.0.10507867`, 100,000 tinybars (0.001 ℏ) a block.
 
-**1. The renter places a job.** The control plane asks the chosen daemon to create it and
-passes the daemon's answer back untouched.
+**1. The renter places a job.** The control plane asks the chosen daemon to
+create it and passes the daemon's answer back untouched.
 
 ```
 POST http://127.0.0.1:8090/jobs
-{ "machineId": "node-a", "renterUaid": "uaid:demo:agent", "image": "busybox:latest" }
+{ "machineId": "node-a", "renterUaid": "uaid:testnet:0.0.10401938", "image": "busybox:latest" }
 ```
 
-**2. The daemon answers `402`** with the payment requirement — stock x402 plus a
-namespaced `blockMeta` extension. A client that ignores `blockMeta` still settles
-correctly.
+**2. The daemon answers `402`** — stock x402 plus a namespaced `blockMeta`
+extension. A client that ignores `blockMeta` still settles correctly.
 
 ```json
 {
@@ -115,71 +114,89 @@ correctly.
     "scheme": "exact",
     "network": "hedera-testnet",
     "asset": "HBAR",
-    "payTo": "0.0.XXXXXX",
-    "maxAmountRequired": "1500",
-    "resource": "/jobs/j_d884fd4c-aa55-4347-9988-1dca32fec3e0/blocks/1",
-    "description": "Block 1 of 10s on uaid:local:node-a",
+    "payTo": "0.0.10507867",
+    "maxAmountRequired": "100000",
+    "resource": "/jobs/j_546bf8e3-8fed-4a5d-8a5a-fa605deef50e/blocks/1",
+    "description": "Block 1 of 20s on uaid:local:node-a",
     "facilitator": "https://api.testnet.blocky402.com"
   }],
   "blockMeta": {
     "protocol": "bsp/0.1",
-    "jobId": "j_d884fd4c-aa55-4347-9988-1dca32fec3e0",
+    "jobId": "j_546bf8e3-8fed-4a5d-8a5a-fa605deef50e",
     "blockIndex": 1,
-    "blockSeconds": 10,
-    "leadSeconds": 4,
-    "windowOpensAt": "2026-09-12T18:16:07.955Z",
-    "boundaryAt": "2026-09-12T18:16:11.955Z"
+    "blockSeconds": 20,
+    "leadSeconds": 8,
+    "windowOpensAt": "2026-09-13T10:50:18.060Z",
+    "boundaryAt": "2026-09-13T10:50:26.060Z"
   }
 }
 ```
 
-**3. The renter pays the daemon directly** — not the marketplace.
+**3. The renter signs and pays the daemon directly** — not the marketplace.
+`@bsp/sdk`'s `HederaPayer` translates that requirement to the facilitator's v2
+wire with `@bsp/protocol`'s `toV2Requirements`, signs a payload with the
+renter's key, and posts it:
 
 ```
-POST http://127.0.0.1:8080/jobs/j_d884fd4c.../blocks/1/payment
+POST http://127.0.0.1:8080/jobs/j_546bf8e3.../blocks/1/payment
 ```
 
-**4. The daemon returns a receipt**, and only then pulls and starts the container. The
-clock starts when the container is ready.
+**4. The daemon verifies and settles** through Blocky402 — `POST /verify`
+returns `{"isValid":true,"payer":"0.0.10401938"}`, then `POST /settle` returns
+the transaction. Only then does it pull and start the container, and the clock
+starts when the container is ready:
 
 ```json
 {
   "v": 1,
   "protocol": "bsp/0.1",
   "type": "block_receipt",
-  "jobId": "j_d884fd4c-aa55-4347-9988-1dca32fec3e0",
+  "jobId": "j_546bf8e3-8fed-4a5d-8a5a-fa605deef50e",
   "blockIndex": 1,
   "providerUaid": "uaid:local:node-a",
-  "renterUaid": "uaid:demo:agent",
+  "renterUaid": "uaid:testnet:0.0.10401938",
   "asset": "HBAR",
-  "amount": "1500",
-  "txId": "0.0.999999@1789236961.955000001",
-  "clockStartedAt": "2026-09-12T18:16:01.955Z",
-  "boundaryAt": "2026-09-12T18:16:11.955Z"
+  "amount": "100000",
+  "txId": "0.0.7162784@1789277006.060479300",
+  "clockStartedAt": "2026-09-13T10:50:06.060Z",
+  "boundaryAt": "2026-09-13T10:50:26.060Z"
 }
 ```
+
+That transaction is real:
+[hashscan.io/testnet/transaction/0.0.7162784@1789277006.060479300](https://hashscan.io/testnet/transaction/0.0.7162784@1789277006.060479300).
+The mirror node shows `SUCCESS`, `0.0.10401938 -100000`, `0.0.10507867 +100000`.
+
+The id is minted under the **facilitator's** account, not the payer's, because
+the facilitator co-signs as fee payer and submits. Matching a receipt to a payer
+by parsing the txId prefix would be wrong.
 
 **5. Renewal repeats that exchange**, once per block, announced on
 `GET /jobs/:id/events` at `boundaryAt - leadSeconds`:
 
 ```
-block 1  0.0.999999@1789236961.955000001  1500
-block 2  0.0.999999@1789236968.337000002  1500
-block 3  0.0.999999@1789236978.344000003  1500
-declining block 4: max_blocks_reached
-Ended: unpaid_boundary after 3 blocks, spent 4500
+… window for block 2 (7.9s left) → paying
+✓ block 2 SETTLED ON TESTNET  0.0.7162784@1789277020.991857857
+… window for block 3 (8.0s left) → paying
+✓ block 3 SETTLED ON TESTNET  0.0.7162784@1789277041.049191367
+… window for block 4 (7.8s left) → declining: max_blocks_reached
 ```
 
-**6. The renter stops buying, and the job ends at the boundary.** Declining is the whole
-of the kill switch — no cancel message is sent. The daemon's watchdog does the rest:
-`SIGTERM`, a non-billable 5-second grace, `SIGKILL` (container exit code 137), flush
-artifacts, emit the terminal receipt. Artifacts from paid blocks are delivered even
-though the job ended `expired`:
+**6. The renter stops buying, and the job ends at the boundary.** Declining is
+the whole of the kill switch — no cancel message is sent. The watchdog does the
+rest: `SIGTERM`, a non-billable grace period, `SIGKILL`, flush artifacts, emit
+the terminal receipt. Artifacts from paid blocks are delivered even though the
+job ended `expired`:
 
 ```
-GET http://127.0.0.1:8080/jobs/j_d884fd4c.../artifacts
-{ "status": "expired", "artifacts": { "stdout": "work 0\nwork 1\n…work 25\n", "stderr": "" } }
+GET /jobs/j_546bf8e3.../artifacts
+{ "status": "expired", "artifacts": { "stdout": "work 0\nwork 1\n…work 65\n" } }
 ```
+
+**7. The billing history is public.** All four receipts — three blocks and the
+termination — are on HCS topic
+[`0.0.10507942`](https://hashscan.io/testnet/topic/0.0.10507942), readable by
+anyone, with no need to trust the provider's account of what it billed.
 
 ## Architecture
 
@@ -279,6 +296,25 @@ const result = await job.result();   // resolves when the job ends
 To stop paying — the kill switch — call `job.stopRenewing()`. Nothing is sent to the
 provider; the job simply ends at the next boundary.
 
+### Settling for real
+
+The quickstart above runs against a mock facilitator and needs no credentials.
+To settle on testnet, fund an **ECDSA** account at
+[portal.hedera.com](https://portal.hedera.com), put it in `.env`, and start the
+daemon with:
+
+```sh
+FACILITATOR_MODE=blocky402 FACILITATOR_FEE_PAYER=0.0.7162784 \
+  PAY_TO=<provider account> ASSET=HBAR PRICE_PER_BLOCK=100000 \
+  DEFAULT_BLOCK_SECONDS=20 DEFAULT_LEAD_SECONDS=8 \
+  RECEIPT_SINK=local+hcs HCS_RECEIPT_TOPIC_ID=<topic> \
+  node packages/daemon/dist/index.js
+```
+
+Then `node tools/e2e/scripts/testnet-demo.mjs`. **The provider and the renter
+must be different accounts** — a `payTo` equal to the payer nets to zero and
+the facilitator rejects it as an amount mismatch.
+
 ### Configuration
 
 Copy [`.env.example`](./.env.example). Two settings decide how much is real:
@@ -296,41 +332,51 @@ filesystem, memory, CPU, PID limits, network mode — stays on.
 
 ## Status
 
-What is built and tested, and what is not. **319 tests** across ten packages;
+What is built and tested, and what is not. **330 tests** across ten packages;
 `pnpm -r build && pnpm -r test`.
 
 | Built and tested | Not built |
 |---|---|
-| The block clock: every SPEC §7 row, against a fake clock | **A live settlement on Hedera testnet.** Needs a funded ECDSA account |
-| Provider daemon: lifecycle, watchdog, §5.5 termination order, SQLite crash recovery | Deployment: no live URLs, no uptime checks, no systemd units in service |
-| Docker executor with memory, CPU, PID, network and read-only-rootfs caps | Demo video |
-| Renewal challenge on SSE + the block resource; `402`/`409`/`410`/`425`/duplicate-`200` | HTS settlement token and custom fee (cut list item 4) |
-| Registry with liveness, §4.1 rejection, job broker that never proxies payment | HCS-14 UAIDs (cut list item 3) — receipts carry plain string uaids today |
-| Renter SDK: renewal loop, budget cap, backoff, stream reconnect, timer fallback | Hardware attestation — out of scope by SPEC §9, and the benchmark says `selfReported: true` |
-| Agent: selection on price × block size, cost per unit of work | Provider reputation, slashing, dispute resolution, cross-provider migration |
-| Console: the meter, live against a job's event stream | Job history screen (cut list item 5) |
-| Receipt schema, canonical signing bytes, HCS publish and mirror-node read | Multi-agent negotiation — deliberately skipped |
+| **Real settlement on Hedera testnet** through Blocky402, verified on the mirror node | Deployment: no public URLs, no uptime checks, no systemd units in service |
+| **Receipts published to HCS** and read back through the mirror node | Demo video |
+| The block clock: every SPEC §7 row, against a fake clock | HTS settlement token and custom fee (cut list item 4) |
+| Provider daemon: lifecycle, watchdog, §5.5 termination order, SQLite crash recovery | HCS-14 UAIDs (cut list item 3) — receipts carry plain string uaids today |
+| Docker executor with memory, CPU, PID, network and read-only-rootfs caps | A second provider node — one node, same code (cut list item 2) |
+| Renewal challenge on SSE + the block resource; `402`/`409`/`410`/`425`/duplicate-`200` | Hardware attestation — out of scope by SPEC §9; the benchmark says `selfReported: true` |
+| Registry with liveness, §4.1 rejection, job broker that never proxies payment | Provider reputation, slashing, dispute resolution, cross-provider migration |
+| Renter SDK: renewal loop, budget cap, backoff, stream reconnect, timer fallback | Job history screen (cut list item 5) |
+| Agent: selection on price × block size, cost per unit of work | Multi-agent negotiation — deliberately skipped |
+| Console: the meter, live against a job's event stream, linked to HashScan | |
 | The trust-boundary test: control plane killed mid-job, job keeps billing | |
 
-### What the Phase 0 gate blocks
+### What the facilitator turned out to be
 
-`docs/facilitator-contract.md` records the facilitator's `/supported` and `402` legs as
-**observed**, and its `/verify` and `/settle` legs as **predicted from documentation**.
-One thing found there matters and is not yet reconciled:
+`docs/facilitator-contract.md` is written from observed behaviour. Four things
+there are worth knowing before integrating against Blocky402:
 
-> The facilitator speaks **x402 v2** — `amount`, not v1's `maxAmountRequired`;
-> `hedera:testnet`, not `hedera-testnet`; HBAR as asset `0.0.0`; and a mandatory
-> `extra.feePayer` naming the facilitator's co-signer.
+- It speaks **x402 v2**: `amount` not `maxAmountRequired`, `hedera:testnet`
+  not `hedera-testnet`, HBAR as asset `0.0.0`, and a mandatory `extra.feePayer`
+  naming its co-signer. SPEC §6.1's envelope is v1, so the translation lives in
+  `@bsp/protocol` — used by both sides, because the renter signs over those
+  exact requirements and the provider verifies against its own copy.
+- **It is not idempotent.** A second settle of the same payload fails
+  `DUPLICATE_TRANSACTION` and returns an empty `transaction`. SPEC §6.3's
+  "duplicate payment returns the existing receipt" is therefore the daemon's
+  guarantee to keep, which it does with a `(jobId, blockIndex)` guard that runs
+  before the facilitator is called at all.
+- **Failures come back as another `402` with an empty body**; the reason is in
+  the `error` field of the `PAYMENT-REQUIRED` header on that response.
+- **A `payTo` equal to the payer nets to zero** and is rejected as an amount
+  mismatch, with no hint that self-payment was the cause.
 
-`packages/protocol` implements SPEC §6.1's v1 envelope. Rather than change the protocol
-document on an unverified reading, the translation lives at the boundary in
-`packages/daemon/src/payments/blocky402-client.ts`, which is written and unit-tested but
-**has never spoken to the real facilitator**. Confirming it, measuring the round trip, and
-checking the §4.1 lead-time floor against that measurement are the remaining Phase 0 work.
+### What the measurement changed
 
-To close it: fund an ECDSA testnet account at [portal.hedera.com](https://portal.hedera.com)
-and [faucet.hedera.com](https://faucet.hedera.com), put it in `.env`, and run
-`pnpm --filter @bsp/phase0-spike server` and `pnpm --filter @bsp/phase0-spike pay`.
+SPEC §4.1's four-second floor used to be an assertion. It is now a measurement:
+the paid leg runs a median **3.2s** (3.0–3.7s, n=5), and the daemon's separate
+verify-then-settle costs ~4.8s. So four seconds admits **one attempt and no
+retry**. The floor stays — it exists to reject the unusable — but the spec now
+says plainly that a listing wanting retry headroom needs `lead_seconds >= 8`,
+and the demo runs at 20s/8s rather than 10s/4s.
 
 ## Track requirements
 
@@ -338,13 +384,13 @@ Hedera AI & Agentic Payments track, mapped to where each line is satisfied.
 
 | Requirement | Where | State |
 |---|---|---|
-| x402-gated service settled through Blocky402 | `packages/daemon/src/payments/blocky402-client.ts`, `src/routes/blocks.route.ts` | Written, not yet run against testnet |
-| An agent consuming it, one real paid request end to end | `packages/agent`, `tools/e2e/test/agent.e2e.test.ts` | Works against the mock facilitator |
+| x402-gated service settled through Blocky402 | `packages/daemon/src/payments/blocky402-client.ts`, `src/routes/blocks.route.ts` | **Done — live on testnet** |
+| An agent consuming it, with a real paid request end to end | `packages/agent`, `tools/e2e/scripts/testnet-demo.mjs` | **Done — real settlements** |
 | Public repo with setup, architecture, payment flow | This file | Done |
 | Video ≤5 minutes | — | Not recorded |
 | Compute metering rather than flat per-request | `packages/core/src/clock.ts`, `packages/daemon/src/jobs/scheduler.ts` | Done |
 | Agent discovery | `packages/control-plane` — `GET /machines` | Done |
-| Verifiable audit trails on HCS | `packages/hedera/src/{topic,sink,mirror}.ts` | Code done, no live topic |
+| Verifiable audit trails on HCS | topic [`0.0.10507942`](https://hashscan.io/testnet/topic/0.0.10507942) | **Done — live topic** |
 | Recurring / streamed payments | The block renewal loop — `packages/sdk/src/job.ts` | Done |
 | On-chain agent identity (HCS-14 UAID) | — | Not built |
 | HTS token or custom fee schedule | — | Not built |
@@ -352,8 +398,6 @@ Hedera AI & Agentic Payments track, mapped to where each line is satisfied.
 
 ## What's next
 
-- **Close Phase 0**, then correct `docs/facilitator-contract.md` from the live responses
-  and reconcile SPEC §6.1's envelope with the v2 wire.
 - **Deploy two nodes** in different regions with different `block_seconds`, so
   granularity-as-a-market-variable is visible to a judge rather than only in a test.
 - **HCS-14 UAIDs** in receipts and console, replacing today's plain string identifiers.
