@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { buildStrip, type MeterState } from "../lib/meter-state.js";
+import { assetLabel } from "../lib/format.js";
 
 interface Props {
   state: MeterState;
@@ -37,7 +38,7 @@ export function Meter({ state, now: fixedNow }: Props) {
         </p>
         <p className="meter__spend">
           <b>
-            {spent} {snap?.asset ?? ""}
+            {spent} {assetLabel(snap?.asset)}
           </b>
           {snap ? `${snap.blockSeconds}s blocks · ${snap.pricePerBlock} each` : "—"}
         </p>

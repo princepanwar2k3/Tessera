@@ -1,5 +1,6 @@
 import type { TickerLine } from "../lib/types.js";
 import { isRealTransaction, transactionUrl } from "../lib/explorer.js";
+import { assetLabel } from "../lib/format.js";
 
 /**
  * The receipt ticker. Everything here was produced by a machine, so all of it
@@ -45,7 +46,7 @@ export function Ticker({
               {line.amount && (
                 <span className="amount">
                   {line.amount}
-                  {asset ? ` ${asset}` : ""}
+                  {asset ? ` ${assetLabel(asset)}` : ""}
                 </span>
               )}
             </li>

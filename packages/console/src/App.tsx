@@ -1,23 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchJobs, fetchMachines, type Placement } from "./lib/api.js";
 import type { MachineListing } from "./lib/types.js";
-import { HCS_TOPIC_ID, topicUrl } from "./lib/explorer.js";
-import { useRoute } from "./lib/route.js";
+import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
 import { MachineList } from "./components/MachineList.js";
 import { JobList } from "./components/JobList.js";
 import { JobView } from "./components/JobView.js";
-import { DemoMeter } from "./components/DemoMeter.js";
-import { RenterPanel } from "./components/RenterPanel.js";
-import { RentForm } from "./components/RentForm.js";
-import { savedRenterUrl, type RenterIdentity } from "./lib/renter.js";
 import { LatestJob } from "./components/LatestJob.js";
 import { Ledger } from "./components/Ledger.js";
+import { RenterPanel } from "./components/RenterPanel.js";
+import { RentForm } from "./components/RentForm.js";
+import { useRoute } from "./lib/route.js";
 
 export function App() {
   const [machines, setMachines] = useState<MachineListing[]>([]);
   const [jobs, setJobs] = useState<Placement[]>([]);
   const [view, setView] = useRoute();
   const [offline, setOffline] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [renterUrl, setRenterUrl] = useState(savedRenterUrl());
   const [identity, setIdentity] = useState<RenterIdentity | undefined>();
   const [rentingId, setRentingId] = useState<string | undefined>();
@@ -30,6 +29,8 @@ export function App() {
       setOffline(false);
     } catch {
       setOffline(true);
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -39,85 +40,97 @@ export function App() {
     return () => window.clearInterval(id);
   }, [load]);
 
+  const newest = jobs[0];
+
   return (
     <main className="shell">
       <header className="masthead">
-        <h1>Tessera</h1>
-        <p>Prepaid block settlement for continuous compute</p>
-        <nav>
-          <button
-            className="tab"
-            aria-current={view.name === "home" ? "page" : undefined}
-            onClick={() => setView({ name: "home" })}
-          >
-            Machines
-          </button>
-          {view.name === "job" && (
-            <button className="tab" aria-current="page">
-              {view.jobId.slice(0, 12)}…
-            </button>
-          )}
-        </nav>
+        <div className="masthead__name">
+          <h1>Tessera</h1>
+          <p>Rent a machine by the block. Pay before each one runs.</p>
+        </div>
+        <RenterPanel
+          baseUrl={renterUrl}
+          identity={identity}
+          onConnected={(url, who) => {
+            setRenterUrl(url);
+            setIdentity(who);
+          }}
+        />
       </header>
 
-      <RenterPanel
-        baseUrl={renterUrl}
-        identity={identity}
-        onConnected={(url, who) => {
-          setRenterUrl(url);
-          setIdentity(who);
-        }}
-      />
-
       {view.name === "job" ? (
-        <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
+        <>
+          <p className="backlink">
+            <a href="#/">Back to machines</a>
+          </p>
+          <JobView jobId={view.jobId} renterUrl={identity ? renterUrl : undefined} />
+        </>
       ) : (
         <>
-          {/* The page leads with a payment stream rather than with copy. A
-              real one when anything is running; the scripted sample only when
-              nothing is, so the meter is never decoration beside a live
-              marketplace. */}
-          {jobs.length > 0 && jobs[0] ? <LatestJob jobId={jobs[0].jobId} /> : <DemoMeter />}
+          {/* The page leads with whatever is actually true: a running job if
+              there is one, otherwise the marketplace. Never a simulation —
+              an idle console that looks busy is worse than an empty one. */}
+          {newest && (
+            <section className="lead">
+              <LatestJob jobId={newest.jobId} />
+            </section>
+          )}
 
-          <div className="columns">
-            <section className="panel card">
+          <section className="panel card">
+            <div className="panel__head">
               <h2>Machines for rent</h2>
-              {offline ? (
-                <p className="error">
-                  Can&apos;t reach the registry. Start it with{" "}
-                  <code>node packages/control-plane/dist/index.js</code>.
-                </p>
+              {identity ? (
+                <span className="empty">Pick one and choose how many blocks to buy.</span>
               ) : (
-                <MachineList
-                  machines={machines}
-                  canRent={identity !== undefined}
-                  rentingId={rentingId}
-                  onRent={(m) => setRentingId(m.machineId)}
-                  renderForm={(m) => (
-                    <RentForm
-                      machine={m}
-                      renterUrl={renterUrl}
-                      onCancel={() => setRentingId(undefined)}
-                      onRented={(job) => {
-                        setRentingId(undefined);
-                        void load();
-                        setView({ name: "job", jobId: job.jobId });
-                      }}
-                    />
-                  )}
-                />
+                <span className="empty">Connect a renter agent to rent one.</span>
               )}
-            </section>
+            </div>
 
-            <section className="panel card">
-              <h2>Live jobs</h2>
-              {offline ? (
-                <p className="empty">Waiting for the registry.</p>
-              ) : (
-                <JobList jobs={jobs} />
-              )}
+            {offline ? (
+              <p className="error">
+                Can&apos;t reach the registry. Start it with{" "}
+                <code>node packages/control-plane/dist/index.js</code>.
+              </p>
+            ) : (
+              <MachineList
+                machines={machines}
+                loaded={loaded}
+                canRent={identity !== undefined}
+                rentingId={rentingId}
+                onRent={(m) => setRentingId(m.machineId)}
+                renderForm={(m) => (
+                  <RentForm
+                    machine={m}
+                    renterUrl={renterUrl}
+                    onCancel={() => setRentingId(undefined)}
+                    onRented={(job) => {
+                      setRentingId(undefined);
+                      void load();
+                      setView({ name: "job", jobId: job.jobId });
+                    }}
+                  />
+                )}
+              />
+            )}
+          </section>
+
+          {!newest && loaded && !offline && (
+            <section className="panel card idle">
+              <h2>Nothing is running</h2>
+              <p>
+                Rent a machine above and its meter appears here — one block at a time, each
+                paid for before it runs.
+              </p>
             </section>
-          </div>
+          )}
+
+          {jobs.length > 1 && (
+            <section className="panel card">
+              <h2>Earlier jobs</h2>
+              <JobList jobs={jobs.slice(1)} />
+            </section>
+          )}
 
           <Ledger />
 
@@ -125,9 +138,9 @@ export function App() {
             <h2>Pay for a block before it runs</h2>
             <p>
               A container runs continuously, but payment arrives in lumps. Serving on credit
-              exposes the provider; escrow exposes the renter. Tessera divides time into fixed
-              blocks, requires each block to be paid before it begins, and opens the window to
-              buy the next block while the current one is still running.
+              exposes the provider; a deposit exposes the renter. Tessera divides time into
+              fixed blocks, requires each one to be paid before it begins, and opens the
+              window to buy the next while the current one is still running.
             </p>
             <ul className="invariants">
               <li>
@@ -143,31 +156,6 @@ export function App() {
                 <b>No custody.</b> Payment goes renter to provider. Nothing is escrowed.
               </li>
             </ul>
-
-            <h2 style={{ marginTop: "1.75rem" }}>Rent one</h2>
-            <p>
-              This page watches jobs; it never starts or pays for one. Renting means signing a
-              payment with your own key, and a browser tab is the wrong place to keep one —
-              which is the same reason the marketplace does not keep one either.
-            </p>
-            <pre className="snippet">{`const job = await marketplace.rent({
-  machine: "node-a",
-  image: "ghcr.io/you/ffmpeg:latest",
-  budget: hbar(2),
-  maxBlocks: 20,
-});
-
-job.on("block", (b) => console.log(b.index, b.txId));
-await job.result();`}</pre>
-            {HCS_TOPIC_ID && (
-              <p>
-                Every block settled here is published to the public consensus log,{" "}
-                <a href={topicUrl(HCS_TOPIC_ID)} target="_blank" rel="noreferrer">
-                  topic {HCS_TOPIC_ID}
-                </a>
-                . Nobody has to take the provider&apos;s word for what was billed.
-              </p>
-            )}
           </section>
         </>
       )}

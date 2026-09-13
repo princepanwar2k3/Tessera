@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { MachineListing } from "../lib/types.js";
 import { quoteRental, rentMachine, type ActiveJob, type Quote } from "../lib/renter.js";
+import { assetLabel } from "../lib/format.js";
 
 interface Props {
   machine: MachineListing;
@@ -93,7 +94,7 @@ export function RentForm({ machine, renterUrl, onRented, onCancel }: Props) {
         <dl className="rent__quote">
           <dt>Spend cap</dt>
           <dd>
-            {quote.total} {quote.asset}
+            {quote.total} {assetLabel(quote.asset)}
           </dd>
           <dt>Uptime bought</dt>
           <dd>

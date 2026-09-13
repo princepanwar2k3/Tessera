@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchLedger, type LedgerReceipt } from "../lib/api.js";
 import { HCS_TOPIC_ID, isRealTransaction, topicUrl, transactionUrl } from "../lib/explorer.js";
+import { assetLabel } from "../lib/format.js";
 
 /**
  * The public billing history, read back from Hedera.
@@ -78,7 +79,9 @@ export function Ledger({ jobId }: { jobId?: string | undefined }) {
                       <span className="ledger__end">ended · {r.reason}</span>
                     )}
                   </td>
-                  <td className="mono">{r.amount ?? "—"}</td>
+                  <td className="mono">
+                    {r.amount ? `${r.amount} ${assetLabel(r.asset)}` : "—"}
+                  </td>
                   <td className="mono">
                     {r.txId && isRealTransaction(r.txId) ? (
                       <a href={transactionUrl(r.txId)} target="_blank" rel="noreferrer">
