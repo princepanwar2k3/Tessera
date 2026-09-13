@@ -36,7 +36,7 @@ type FetchLike = typeof globalThis.fetch;
  * renter pays the provider directly.
  *
  * The control plane never proxies a payment and never holds a key
- * (SPEC §3 I4, PLAN.md's trust boundary). If this process dies mid-job, the
+ * (SPEC §3 I4 — the trust boundary). If this process dies mid-job, the
  * job keeps running and keeps billing — `tools/e2e` asserts exactly that.
  */
 export class Broker {

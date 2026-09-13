@@ -13,7 +13,7 @@ export interface HardwareSpecs {
 
 /**
  * Static host info reported to the control plane at registration, and shown
- * on the provider's listing (PLAN.md's console mockup: "4 vCPU · 8 GB").
+ * on the provider's listing (e.g. "4 vCPU · 8 GB").
  * This is self-reported by the daemon, not independently verified — see
  * src/controlplane/attestation.ts for the (also self-reported, also
  * unverified) benchmark that raises the cost of lying about it.

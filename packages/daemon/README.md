@@ -1,8 +1,9 @@
 # @bsp/daemon — provider node
 
-Implements the provider side of BSP v0.1 (see repo root `SPEC.md`): gates a job behind an x402 402, owns the block clock, and runs the watchdog that kills a container the instant its block boundary passes unpaid.
-
-Built standalone — no dependency on `packages/protocol` / `packages/core` yet (they've since been merged in; wiring this package to them is open, see `../../claude.md`'s "Status" section). See `../../claude.md` for the team split and the swap-later design of `src/spec/`.
+The provider side of BSP v0.1 (see the repo root [`SPEC.md`](../../SPEC.md)).
+It gates a job behind an x402 `402`, owns the block clock, settles each block
+through the facilitator, and runs the watchdog that stops a container the moment
+a block boundary passes unpaid.
 
 ## Quickstart
 
@@ -14,24 +15,31 @@ pnpm --filter @bsp/daemon dev           # start the HTTP daemon (needs Docker ru
 ./scripts/demo-curl.sh                  # full HTTP lifecycle demo, in another terminal
 ```
 
-## What's real vs. mocked today
+## Components
 
-| Piece | Status |
+| Piece | Where |
 |---|---|
-| Block clock, watchdog, boundary termination | Real — the whole point of this package |
-| Docker container lifecycle (dockerode) | Real |
-| Resource caps (memory/cpu/pids/network/readonly-rootfs) | Real |
-| x402 payment gate (402/409/410/425/200 decision table) | Real |
-| Facilitator payment verification | Mocked (`MockFacilitatorClient` accepts any payload) — swap for a real Blocky402 client behind the same `FacilitatorClient` interface |
-| Control-plane registration/heartbeat | No-op by default; set `CONTROL_PLANE_URL` to point at a real one |
-| HCS receipt publishing | Not here — this package writes receipt JSON to a local `ReceiptSink`; P3's `packages/hedera` publishes to HCS |
-| Hardware attestation | A CPU timing benchmark only, not real attestation (see `src/controlplane/attestation.ts`) |
+| Block clock, watchdog, boundary termination (§5.4, §5.5) | `src/jobs/scheduler.ts`, `src/spec/boundary.ts` |
+| x402 payment gate — the `402`/`409`/`410`/`425`/duplicate-`200` table (§6.3, §7) | `src/payments/payment-gate.ts` |
+| Blocky402 facilitator client (x402 v2 verify + settle) | `src/payments/blocky402-client.ts` |
+| Mock facilitator for offline dev and CI (`FACILITATOR_MODE=mock`) | `src/payments/facilitator-client.ts` |
+| Docker executor with memory, CPU, PID, network and read-only-rootfs caps | `src/docker/` |
+| Receipts — local, HCS, or both (`RECEIPT_SINK`) | `src/receipts/`, publishing via `@bsp/hedera` |
+| HCS-14 provider identity, minted at startup | `src/index.ts` |
+| Renewal challenge and event stream (SSE) | `src/routes/events.route.ts` |
+| Crash recovery — orphaned jobs are marked `aborted` with a terminal receipt | `src/jobs/recovery.ts` |
+| Registration and heartbeat to the control plane | `src/controlplane/` |
+
+Hardware attestation is a self-reported CPU benchmark, not real attestation —
+out of scope by SPEC §9.
 
 ## Config
 
-See `deployment/ops/.env.example` at the repo root for all environment variables.
+See [`.env.example`](../../.env.example) at the repo root.
 
 ## Tests
 
-- `pnpm test` — pure/fake-based tests (boundary logic, lead-time validation, the watchdog scheduler, termination sequencing, payment-gate decision table, full job-service integration). No Docker or wall-clock waiting required.
-- `pnpm test:docker` — tests that talk to a real Docker daemon. Opt-in, not part of `pnpm test`.
+- `pnpm test` — boundary logic, lead-time validation, the watchdog scheduler,
+  termination sequencing, the payment-gate decision table, facilitator client,
+  HCS receipts, and full job-service integration. No Docker or wall-clock waiting.
+- `pnpm test:docker` — tests against a real Docker daemon. Opt-in.

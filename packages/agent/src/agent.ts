@@ -33,7 +33,7 @@ export interface AgentOptions {
 /**
  * An agent that rents a machine unattended.
  *
- * It compares listings on price *and* block size (PLAN.md Phase 5), prints the
+ * It compares listings on price *and* block size (SPEC §4.2), prints the
  * reasoning, runs the job through the SDK, and reports what the work actually
  * cost per unit. The estimate and the outcome are both reported, because the
  * gap between them is what block size actually costs.

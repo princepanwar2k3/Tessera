@@ -11,7 +11,7 @@ Recommended path: run the daemon directly on the VPS host (Node 20 + systemd), t
    ```
 2. Clone the repo, install deps, build:
    ```bash
-   git clone <repo-url> && cd eth_global
+   git clone https://github.com/princepanwar2k3/Tessera.git && cd Tessera
    pnpm install
    pnpm --filter @bsp/daemon build
    ```

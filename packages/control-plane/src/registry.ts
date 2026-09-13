@@ -31,7 +31,7 @@ export interface MachineRow extends MachineListing {
 
 /**
  * Registry and liveness. Discovery only — the control plane is never in the
- * payment path (PLAN.md), so nothing here touches a facilitator, holds a key,
+ * payment path (SPEC §3 I4), so nothing here touches a facilitator, holds a key,
  * or knows what a receipt is.
  */
 export class Registry {

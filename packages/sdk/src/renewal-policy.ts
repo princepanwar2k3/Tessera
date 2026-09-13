@@ -20,9 +20,9 @@ export type RenewalDecision =
 /**
  * Should the renter buy the next block?
  *
- * Pure, and deliberately the whole of the kill switch. PLAN.md is explicit
- * that declining is *not* a special case: the renter simply does nothing, and
- * the provider's watchdog ends the job at the boundary. There is no "cancel"
+ * Pure, and deliberately the whole of the kill switch. Declining is *not* a
+ * special case: the renter simply does nothing, and the provider's watchdog
+ * ends the job at the boundary. There is no "cancel"
  * message to send and no cleanup handshake to get wrong (SPEC §7, "renter
  * disappears").
  */

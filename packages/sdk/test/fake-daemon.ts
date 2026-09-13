@@ -3,7 +3,7 @@ import type { BlockReceipt } from "@bsp/protocol";
 /**
  * A scripted stand-in for the provider daemon, as a `fetch` implementation.
  *
- * The SDK must not depend on @bsp/daemon (PLAN.md: nothing depends on daemon),
+ * The SDK must not depend on @bsp/daemon (the workspace rule: nothing depends on daemon),
  * and the real pairing is covered by tools/e2e. This exists to drive the
  * renewal loop through cases that are awkward to provoke against a real node:
  * a facilitator that fails twice, a window that closes, a stream that dies.

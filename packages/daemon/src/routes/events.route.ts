@@ -9,7 +9,7 @@ const KEEPALIVE_MS = 15_000;
  * `GET /jobs/:jobId/events` — SPEC §5.3's renewal challenge stream, and the
  * feed the console's meter runs on.
  *
- * A hint, never a dependency (PLAN.md): everything delivered here is also
+ * A hint, never a dependency: everything delivered here is also
  * reachable by polling the 402 on the block resource, so a dropped stream
  * can never kill a paid job. Reconnection is honest — `Last-Event-ID` replays
  * exactly what was missed from the bus's ring buffer.

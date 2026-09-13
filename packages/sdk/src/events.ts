@@ -1,7 +1,7 @@
 /**
- * The daemon's event stream shapes — the Gate-2 P2 -> P3 contract.
+ * The daemon's event stream shapes — the daemon/client wire contract.
  * Mirrored here so the SDK depends on the wire format, not on @bsp/daemon
- * (PLAN.md's dependency rule: nothing depends on daemon).
+ * (the workspace dependency rule: nothing depends on daemon).
  */
 import type { PaymentRequirement, BlockReceipt, TerminalReceipt } from "@bsp/protocol";
 

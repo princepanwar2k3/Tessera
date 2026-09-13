@@ -14,7 +14,7 @@ export type WindowOpenHandler = (job: Job, blockIndex: number) => void;
 /**
  * THE WATCHDOG. Ticks ~once/sec over every active job and evaluates the
  * boundary condition from src/spec/boundary.ts. This is the single most
- * demo-critical piece of the daemon (PLAN.md is explicit about this) — keep
+ * critical piece of the daemon — keep
  * it simple, and keep it exhaustively tested (see test/jobs/scheduler.test.ts).
  *
  * One global ticker rather than one setInterval per job: simpler to reason

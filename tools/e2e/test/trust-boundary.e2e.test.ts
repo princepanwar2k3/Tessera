@@ -10,8 +10,8 @@ afterEach(async () => {
 });
 
 /**
- * PLAN.md Phase 4: "kill the control plane mid-job and assert the job keeps
- * running and keeps billing. That test *is* the trust-boundary claim."
+ * Kill the control plane mid-job and assert the job keeps running and keeps
+ * billing. This test *is* the trust-boundary claim.
  *
  * The difference between a centralised marketplace with a crypto button and a
  * marketplace whose operator cannot take your money or stop your job.

@@ -11,3 +11,14 @@ dist/
 artifacts/
 data/
 
+
+# Internal working documents — kept locally, not part of the submission.
+# Build plans, team allocation, the demo run sheet and assistant config say
+# how the work was organised, not what it does.
+CLAUDE.md
+claude.md
+IMPLEMENTATION-PLAN.md
+PLAN.md
+docs/DEMO.md
+docs/TEAM-SPLIT.md
+docs/reference/

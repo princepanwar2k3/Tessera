@@ -51,8 +51,8 @@ export interface JobResult {
  *
  * Two things drive renewal: the SSE `renewal` event, and a timer computed from
  * the clock the daemon published. Either alone is sufficient. That redundancy
- * is the point — PLAN.md requires that a dropped stream can never kill a paid
- * job, so the stream is never the only thing watching the clock.
+ * is the point — a dropped stream must never kill a paid job, so the stream
+ * is never the only thing watching the clock.
  */
 export class Job {
   private readonly handlers: { [K in keyof JobHandlers]: JobHandlers[K][] } = {

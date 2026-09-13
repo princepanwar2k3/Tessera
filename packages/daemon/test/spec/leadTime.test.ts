@@ -26,7 +26,7 @@ describe("validateLeadTime", () => {
     expect(validateLeadTime(10, 11).ok).toBe(false);
   });
 
-  it("rejects a 10s block with a 1s window (the PLAN.md misconfiguration example)", () => {
+  it("rejects a 10s block with a 1s window (the canonical misconfiguration)", () => {
     const result = validateLeadTime(10, 1);
     expect(result.ok).toBe(false);
   });

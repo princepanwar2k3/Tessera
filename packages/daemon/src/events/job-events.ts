@@ -5,7 +5,7 @@ import type { BlockReceipt, Job, PaymentRequirement, TerminalReceipt } from "../
  * stream", plus the settlement and termination events the console and SDK
  * render.
  *
- * PLAN.md fixes this shape at Gate 2 as the P2 -> P3 contract. The stream is
+ * This shape is the contract between the daemon and its clients. The stream is
  * a *hint, never a dependency*: a renter that never connects can still pay by
  * polling the 402 on the block resource, and an SDK whose stream drops falls
  * back to a timer computed from `clockStartedAt`. Nothing here may become

@@ -53,7 +53,7 @@ describe("quote", () => {
 
 describe("selectMachine", () => {
   /**
-   * PLAN.md's example, and the reason block size is a market variable:
+   * The reason block size is a market variable (SPEC §4.2):
    * a cheaper node with 60s blocks costs more for a 90s job than a dearer
    * node with 15s blocks.
    */

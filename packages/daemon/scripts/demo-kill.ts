@@ -1,6 +1,6 @@
 /**
  * Standalone proof of the watchdog against a REAL container, no HTTP layer
- * involved. This is the PLAN.md Day-2 hard gate: prove that an unpaid block
+ * involved. It proves that an unpaid block
  * boundary kills a real Docker container via SIGTERM -> grace -> SIGKILL and
  * emits a terminal receipt.
  *

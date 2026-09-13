@@ -17,7 +17,7 @@ const DEFAULT_RECONNECT_MS = [250, 500, 1000, 2000, 5000];
  * SSE client for `GET /jobs/:id/events`, with automatic reconnection that
  * resumes from the last seen event id.
  *
- * This stream is a *hint, never a dependency* (PLAN.md). Everything it
+ * This stream is a *hint, never a dependency*. Everything it
  * delivers is also reachable by polling the 402 on the block resource, and
  * `Job` keeps a timer fallback running regardless of stream health. A dropped
  * stream must never be able to kill a paid job, so nothing here throws

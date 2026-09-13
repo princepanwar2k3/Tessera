@@ -1,8 +1,10 @@
-# Phase 0 spike (throwaway — not part of the protocol)
+# Facilitator spike — not part of the protocol
 
-Proves one real x402 payment on Hedera testnet through the Blocky402
-facilitator. Nothing here ships; Phase 3 rewires the real facilitator
-using `docs/facilitator-contract.md`.
+The first real x402 payment on Hedera testnet through the Blocky402
+facilitator, and the tool that measured the paid-leg round trip behind SPEC
+§4.1's lead-time floor. The daemon's production client
+(`packages/daemon/src/payments/blocky402-client.ts`) is built from what this
+observed; see `docs/facilitator-contract.md`.
 
 ## 1. Accounts (once)
 
@@ -34,12 +36,12 @@ pnpm --filter @bsp/phase0-spike pay
 ```
 
 Expected: `[1] 200`, `[2] 402`, `[3] 200` with a `txId` and a
-`hashscan.io/testnet` link. Paste that link into
-`docs/facilitator-contract.md` (§Observed round trip) — that paste
-**is** the Phase 0 gate.
+`hashscan.io/testnet` link. The recorded run is in
+`docs/facilitator-contract.md` §5.
 
 ## 4. Timing note
 
 `pay.mjs` prints the paid-leg round trip (402 → sign → verify → settle →
 200). That number is the empirical input to SPEC §4.1's lead-time floor:
-a 4s window must comfortably fit several attempts of it.
+it measures a median 3.2s, so a 4s window fits exactly one attempt and a
+listing that wants retry headroom needs `lead_seconds >= 8`.
